@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"log"
 )
 
 // App struct
@@ -18,6 +20,7 @@ func NewApp() *App {
 // startup is called at application startup
 func (a *App) startup(ctx context.Context) {
 	// Perform your setup here
+
 	a.ctx = ctx
 }
 
@@ -40,5 +43,18 @@ func (a *App) shutdown(ctx context.Context) {
 
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
+	log.Printf("Hello %s, It's show time!", name)
 	return fmt.Sprintf("Hello %s, It's show time!", name)
+}
+
+func (a *App) OpenFolderDialog() string {
+	log.Println("Call OpenFolderDialog")
+	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{})
+	if err != nil {
+		log.Printf("Encountered Error in OpenFolderDialog %s", err)
+	}
+
+	log.Printf("Selected Folder %s", dir)
+
+	return dir
 }
