@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"log"
 )
@@ -20,8 +19,9 @@ func NewApp() *App {
 // startup is called at application startup
 func (a *App) startup(ctx context.Context) {
 	// Perform your setup here
-
 	a.ctx = ctx
+
+	// TODO add settings loading
 }
 
 // domReady is called after front-end resources have been loaded
@@ -39,12 +39,6 @@ func (a *App) beforeClose(ctx context.Context) (prevent bool) {
 // shutdown is called at application termination
 func (a *App) shutdown(ctx context.Context) {
 	// Perform your teardown here
-}
-
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	log.Printf("Hello %s, It's show time!", name)
-	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
 func (a *App) OpenFolderDialog() string {
