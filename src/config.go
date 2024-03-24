@@ -1,9 +1,8 @@
-package main
+package cm
 
 import (
 	"gopkg.in/yaml.v3"
-	"log"
-	"os"
+	"log/slog"
 )
 
 // Config is the struct that holds the configuration
@@ -14,19 +13,14 @@ type Config struct {
 	Include   []map[string]string
 }
 
-// ParseConfig parses the variants.yaml file and returns a Config struct
-func ParseConfig() *Config {
-	yamlFile, err := os.ReadFile("variants.yaml")
-	if err != nil {
-		log.Fatalf("yamlFile.Get err   #%v ", err)
-	}
-
+// ParseConfig parses the yaml input and returns a Config struct
+func ParseConfig(inputYAML []byte) (*Config, error) {
 	config := Config{}
 
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
+	if err := yaml.Unmarshal(inputYAML, &config); err != nil {
+		slog.Warn("Unmarshal error: %v", err)
+		return nil, err
 	}
 
-	return &config
+	return &config, nil
 }
