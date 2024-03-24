@@ -3,11 +3,6 @@
 import {Inter} from 'next/font/google'
 import './globals.css'
 import {cn} from "@/lib/utils";
-import {
-    NavigationMenu
-} from "@/components/ui/navigation-menu";
-import Link from "next/link";
-import {ChevronRight, Home} from "lucide-react";
 
 const inter = Inter({subsets: ['latin'], variable: "--font-sans"})
 

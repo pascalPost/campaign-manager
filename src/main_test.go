@@ -14,7 +14,7 @@ func TestTemplate(t *testing.T) {
 		panic(err)
 	}
 
-	unit := Unit{
+	unit := Job{
 		parameter: map[string]string{
 			"input": "dog",
 		},

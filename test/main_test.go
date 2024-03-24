@@ -10,6 +10,6 @@ func TestUnitCreation(t *testing.T) {
 		"key1": "value1",
 		"key2": "value2",
 	}
-	unit := cm.NewUnit("template.txt", param, "output")
+	unit := cm.NewJob("template.txt", param, "output")
 	cm.Generate(*unit)
 }

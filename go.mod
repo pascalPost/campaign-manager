@@ -5,6 +5,8 @@ go 1.21
 toolchain go1.21.4
 
 require (
+	github.com/go-chi/chi/v5 v5.0.12
+	github.com/stretchr/testify v1.9.0
 	github.com/wailsapp/wails/v2 v2.8.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -29,7 +31,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/samber/lo v1.38.1 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/tkrajina/go-reflector v0.5.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
