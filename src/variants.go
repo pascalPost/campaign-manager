@@ -1,6 +1,4 @@
-package main
-
-import "slices"
+package cm
 
 func GenerateVariants(config *Config) []map[string]string {
 	variants := generateFromMatrix(config.Matrix)
@@ -55,27 +53,34 @@ func generateFromMatrix(matrix map[string][]string) []map[string]string {
 }
 
 func removeExcludes(variants []map[string]string, excludes []map[string]string) []map[string]string {
-	// TODO check if all keys are specified
-
-	// TODO add possibility to remove multiple entries at once
+	// parse all variants and collect the ones that match the exclude map
+	var idx2delete []uint
 	for _, exclude := range excludes {
 		for i, variant := range variants {
-			found := true
-
 			for k, v := range exclude {
-				if variant[k] != v {
-					found = false
-					break
+				if variant[k] == v {
+					idx2delete = append(idx2delete, uint(i))
 				}
-			}
-
-			if found {
-				// this might not be the most efficient way to delete an entry;
-				// order is retained
-				variants = slices.Delete(variants, i, i+1)
 			}
 		}
 	}
+
+	//delete all marked variants
+
+	// TODO create own class for variants that contains all keys.
+	// TODO use the keys to check that all given exclude keys are valid.
+
+	//variants = slices.DeleteFunc(variants, func(variant map[string]string) bool {
+	//	for _, exclude := range excludes {
+	//		for k, v := range exclude {
+	//			if variant[k] != v {
+	//				return false
+	//			}
+	//		}
+	//		return true
+	//	}
+	//	return false
+	//})
 
 	return variants
 }
