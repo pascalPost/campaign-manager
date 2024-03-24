@@ -4,6 +4,40 @@ Project to manage campaigns based on go templates and a YAML based configuration
 The project is based on the [Wails](https://wails.io) framework and offers a web interface.
 The backend is written in Go.
 
+## Architecture
+
+### Overview
+                   +--------------------------+
+                   |                          |
+                   |         Frontend         |
+                   |         (React)          |
+                   |          Wails           |
+                   +------------+-------------+
+                                |
+                                | HTTP Requests (REST)
+                                |
+                   +------------v-------------+
+                   |                          |
+                   |         Backend          |
+                   |       (GoLang API)       |
+                   |                          |
+                   +------------+-------------+
+                                |
+                                | Workload Manager
+                                |
+                   +------------v-------------+
+                   |                          |
+                   |     High-Performance     |
+                   |     Computing Cluster    |
+                   |                          |
+                   +--------------------------+
+
+### Backend
+
+
+
+
+
 ## Dependencies
 - [Wails](https://wails.io)
 

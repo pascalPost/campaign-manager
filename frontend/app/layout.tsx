@@ -3,7 +3,6 @@
 import {Inter} from 'next/font/google'
 import './globals.css'
 import {cn} from "@/lib/utils";
-import {Breadcrumb, BreadcrumbItem, BreadcrumbLink} from "@/components/ui/breadcrumb";
 import {
     NavigationMenu
 } from "@/components/ui/navigation-menu";

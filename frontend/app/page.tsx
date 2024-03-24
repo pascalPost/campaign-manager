@@ -2,8 +2,8 @@
 
 import {Button} from "@/components/ui/button";
 import {OpenFolderDialog} from "@/wailsjs/go/main/App";
-import {NavBreadcrumb} from "@/components/nav-breadcrumb";
 import {Home} from "lucide-react";
+import {Card} from "@/components/ui/card";
 
 export default function HomePage() {
 
@@ -17,22 +17,15 @@ export default function HomePage() {
 
     return (
         <>
-            <NavBreadcrumb entries={[
-                {
-                    href: "/",
-                    label: (
-                        <div className="inline-flex items-center gap-1">
-                            <Home size="1em"/>
-                            Home
-                        </div>
-                    ),
-                },
-            ]}/>
             <h1>Home (Dashboard)</h1>
-            <div className="flex justify-center items-center h-screen">
+            <div>
                 <Button><a href="/createProject">Create Project</a></Button>
                 <Button onClick={onClick}>Open Project</Button>
             </div>
+            <Card>
+                Project
+                <Button><a href="/project">Open</a></Button>
+            </Card>
         </>
     )
 }
