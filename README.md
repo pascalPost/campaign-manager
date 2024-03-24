@@ -1,5 +1,12 @@
 # campaign-manager
 
+
+To create a program that runs a lot of computations while providing a nice frontend for the user to monitor the status and interact
+
+Manage computation campaigns (execution of a lot of jobs)
+
+Nice frontend
+
 Project to manage campaigns based on go templates and a YAML based configuration file.
 The project is based on the [Wails](https://wails.io) framework and offers a web interface.
 The backend is written in Go.
@@ -40,7 +47,11 @@ air
 ```
 The REST API is available at http://localhost:3000/api/v1.
 
+Router: chi (https://github.com/go-chi/chi)
 
+To create a type safe api, openapi (swagger) is used to document the api.
+This is done from the go backend with swag (https://github.com/swaggo/swag)
+and http-swagger (https://github.com/swaggo/http-swagger) for chi.
 
 ## Dependencies
 - [Wails](https://wails.io)
