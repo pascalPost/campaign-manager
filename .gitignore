@@ -1,2 +1,5 @@
 # wails build
 /build/bin/
+
+# air temp folder
+/tmp/

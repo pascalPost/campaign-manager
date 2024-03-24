@@ -34,7 +34,11 @@ The backend is written in Go.
 
 ### Backend
 
-
+For server development: use air to update (re-build) on change
+```shell
+air
+```
+The REST API is available at http://localhost:3000/api/v1.
 
 
 
