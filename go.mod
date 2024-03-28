@@ -7,6 +7,8 @@ toolchain go1.21.4
 require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/stretchr/testify v1.9.0
+	github.com/swaggo/http-swagger v1.3.4
+	github.com/swaggo/swag v1.16.3
 	github.com/wailsapp/wails/v2 v2.8.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -39,8 +41,6 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/samber/lo v1.38.1 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
-	github.com/swaggo/http-swagger v1.3.4 // indirect
-	github.com/swaggo/swag v1.16.3 // indirect
 	github.com/tkrajina/go-reflector v0.5.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
@@ -52,7 +52,6 @@ require (
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.19.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.7.1 => /Users/post/go/pkg/mod

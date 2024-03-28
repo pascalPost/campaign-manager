@@ -21,7 +21,7 @@ The backend is written in Go.
                    |          Wails           |
                    +------------+-------------+
                                 |
-                                | HTTP Requests (REST)
+                                | HTTP Requests (REST or RPC)
                                 |
                    +------------v-------------+
                    |                          |
