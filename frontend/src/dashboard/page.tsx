@@ -1,7 +1,8 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button.tsx";
+import { ProjectTable } from "./project-table.tsx";
 
-export default function Dashboard() {
+export default function DashboardPage() {
   return (
     <>
       <h1 className="scroll-m-20 text-2xl font-semibold tracking-tight">
@@ -12,7 +13,9 @@ export default function Dashboard() {
           <Link href="/project/create">Create New Project</Link>
         </Button>
       </div>
-      <div className="mt-4">{/*<ProjectTable />*/}</div>
+      <div className="mt-4">
+        <ProjectTable />
+      </div>
     </>
   );
 }

@@ -7,11 +7,11 @@ plugins:
     out: src
     opt: paths=source_relative
   - plugin: es
-    out: frontend/lib
+    out: frontend/src/lib
     opt:
       - target=ts
   - plugin: connect-es
-    out: frontend/lib
+    out: frontend/src/lib
     opt:
       - target=ts
       - import_extension=none
