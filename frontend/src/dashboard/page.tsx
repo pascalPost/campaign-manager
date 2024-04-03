@@ -9,7 +9,7 @@ export default function DashboardPage() {
         Dashboard
       </h1>
       <div className="mt-4 flex gap-5">
-        <Button className="w-full">
+        <Button className="w-full" asChild>
           <Link href="/project/create">Create New Project</Link>
         </Button>
       </div>
