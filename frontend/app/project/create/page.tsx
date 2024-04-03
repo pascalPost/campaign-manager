@@ -4,11 +4,20 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {useForm} from "react-hook-form";
+import {createPromiseClient} from "@connectrpc/connect";
+import {createConnectTransport} from "@connectrpc/connect-web";
+import {NewProjectService} from "@/lib/proto/cm/v1/cm_connect";
 
 type Project = {
     projectName: string,
     csvFile: File | null,
 }
+
+const transport = createConnectTransport({
+    baseUrl: "http://localhost:8080",
+});
+
+const client = createPromiseClient(NewProjectService, transport);
 
 export default function CreateProjectPage() {
     const form = useForm<Project>({
@@ -20,6 +29,14 @@ export default function CreateProjectPage() {
 
     function onSubmit(data: Project) {
         console.log(data);
+        client.newProject({
+            projectName: data.projectName,
+            csvFilePath: data.csvFile?.name ?? "",
+        }).then((response) => {
+            console.log(response);
+        }).catch((error) => {
+            console.error(error);
+        });
     }
 
     return (
@@ -30,7 +47,7 @@ export default function CreateProjectPage() {
                     <FormField
                         control={form.control}
                         name="projectName"
-                        render={({ field }) => (
+                        render={({field}) => (
                             <FormItem>
                                 <FormLabel>Name</FormLabel>
                                 <FormControl>
@@ -39,14 +56,14 @@ export default function CreateProjectPage() {
                                 <FormDescription>
                                     The name of the project.
                                 </FormDescription>
-                                <FormMessage />
+                                <FormMessage/>
                             </FormItem>
                         )}
                     />
                     <FormField
                         control={form.control}
                         name="csvFile"
-                        render={({ field: { value, onChange, ...fieldProps } }) => (
+                        render={({field: {value, onChange, ...fieldProps}}) => (
                             <FormItem>
                                 <FormLabel>CSV File</FormLabel>
                                 <FormControl>
@@ -63,7 +80,7 @@ export default function CreateProjectPage() {
                                 <FormDescription>
                                     Import a csv file with parameters for job generation.
                                 </FormDescription>
-                                <FormMessage />
+                                <FormMessage/>
                             </FormItem>
                         )}
                     />

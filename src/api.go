@@ -2,10 +2,13 @@ package cm
 
 import (
 	"connectrpc.com/connect"
+	connectcors "connectrpc.com/cors"
 	"context"
+	"database/sql"
 	_ "github.com/campaign-manager/src/proto/cm/v1"
 	protocmv1 "github.com/campaign-manager/src/proto/cm/v1"
 	"github.com/campaign-manager/src/proto/cm/v1/protocmv1connect"
+	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"log"
@@ -28,15 +31,51 @@ func (s *PingServer) Ping(
 	return res, nil
 }
 
+type ProjectServer struct {
+	protocmv1connect.UnimplementedNewProjectServiceHandler
+	db *sql.DB
+}
+
+func NewProjectServer(db *sql.DB) *ProjectServer {
+	return &ProjectServer{db: db}
+}
+
+func (s *ProjectServer) NewProject(
+	ctx context.Context,
+	req *connect.Request[protocmv1.NewProjectRequest],
+) (*connect.Response[protocmv1.NewProjectResponse], error) {
+	log.Println("Request headers: ", req.Header())
+	log.Println("Request Msg: ", req.Msg)
+
+	projectId := uint64(11)
+
+	res := connect.NewResponse(&protocmv1.NewProjectResponse{
+		ProjectId: &projectId,
+	})
+	return res, nil
+}
+
+// withCORS adds CORS support to a Connect HTTP handler.
+func withCORS(h http.Handler) http.Handler {
+	middleware := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:3000"},
+		AllowedMethods: connectcors.AllowedMethods(),
+		AllowedHeaders: connectcors.AllowedHeaders(),
+		ExposedHeaders: connectcors.ExposedHeaders(),
+	})
+	return middleware.Handler(h)
+}
+
 func Server() {
-	pinger := &PingServer{}
+	db := ConnectDB()
+
 	mux := http.NewServeMux()
-	path, handler := protocmv1connect.NewPingServiceHandler(pinger)
-	mux.Handle(path, handler)
+	mux.Handle(protocmv1connect.NewPingServiceHandler(&PingServer{}))
+	mux.Handle(protocmv1connect.NewNewProjectServiceHandler(NewProjectServer(db)))
 	err := http.ListenAndServe(
 		"localhost:8080",
 		// Use h2c so we can serve HTTP/2 without TLS.
-		h2c.NewHandler(mux, &http2.Server{}),
+		withCORS(h2c.NewHandler(mux, &http2.Server{})),
 	)
 	if err != nil {
 		log.Fatal(err)
