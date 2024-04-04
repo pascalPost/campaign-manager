@@ -7,57 +7,68 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge.tsx";
+import {
+  ColumnDef,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table"; // TODO: click on job to see job infos, like state history change, detailed parameters, etc.
 
 // TODO: click on job to see job infos, like state history change, detailed parameters, etc.
 
-const jobs = [
-  {
-    id: "0",
-    param: {
-      key1: "v0",
-      key2: "v0",
-      key3: "v0",
-    },
-    status: "PENDING",
-  },
-  {
-    id: "1",
-    param: {
-      key1: "v1",
-      key2: "v1",
-      key3: "v1",
-    },
-    status: "RUNNING",
-  },
-  {
-    id: "2",
-    param: {
-      key1: "v2",
-      key2: "v2",
-      key3: "v2",
-    },
-    name: "P0",
-    status: "COMPLETED",
-  },
-  {
-    id: "3",
-    param: {
-      key1: "v3",
-      key2: "v3",
-      key3: "v3",
-    },
-    status: "FAILED",
-  },
-  {
-    id: "4",
-    param: {
-      key1: "v4",
-      key2: "v4",
-      key3: "v4",
-    },
-    status: "CANCELLED",
-  },
-];
+export type Job = {
+  id: string;
+  param: Record<string, string>;
+  status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  scheduler_id?: string;
+};
+
+export function GetColumnDef(data: Job[]): ColumnDef<Job>[] {
+  const allKeysSet: Set<string> = new Set(
+    data.flatMap((job) => Object.keys(job.param)),
+  );
+
+  const columnHelper = createColumnHelper<Job>();
+
+  const columns: ColumnDef<Job>[] = [
+    columnHelper.group({
+      id: "info",
+      header: "Info",
+      columns: [
+        {
+          accessorKey: "id",
+          header: "Job",
+        },
+        {
+          accessorKey: "status",
+          header: "Status",
+          cell: ({ row }) => {
+            return statusBadge(row.getValue("status"));
+          },
+        },
+        {
+          accessorKey: "scheduler_id",
+          header: "Scheduler ID",
+        },
+      ],
+    }),
+    columnHelper.group({
+      id: "param",
+      header: "Parameter",
+      columns: Array.from(allKeysSet).map((key) => ({
+        accessorKey: key,
+        header: key,
+        cell: ({ row }) => {
+          const job = row.original;
+          return job.param[key];
+        },
+      })),
+    }),
+  ];
+
+  return columns;
+}
 
 function statusBadge(status: string) {
   switch (status) {
@@ -76,25 +87,65 @@ function statusBadge(status: string) {
   }
 }
 
-export function JobTable() {
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+}
+
+export function JobTable<TData, TValue>({
+  columns,
+  data,
+}: DataTableProps<TData, TValue>) {
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">Job</TableHead>
-          <TableHead>Parameter</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {jobs.map((job) => (
-          <TableRow key={job.id}>
-            <TableCell className="font-medium">{job.id}</TableCell>
-            <TableCell>{/*job.param*/}</TableCell>
-            <TableCell>{statusBadge(job.status)}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead key={header.id} colSpan={header.colSpan}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
