@@ -7,6 +7,7 @@ import CreateProjectPage from "@/project/create/page";
 import ProjectPage from "@/project/[projectId]/page.tsx";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { Layout } from "@/components/layout";
+import SettingsPage from "@/settings/page.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -14,6 +15,7 @@ createRoot(document.getElementById("root")!).render(
       <Layout>
         <Switch>
           <Route path="/" component={DashboardPage} />
+          <Route path="/settings" component={SettingsPage} />
           <Route path="/project/create" component={CreateProjectPage} />
           <Route path="/project/:projectId" component={ProjectPage} />
 

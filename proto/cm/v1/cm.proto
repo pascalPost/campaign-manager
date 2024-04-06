@@ -27,3 +27,15 @@ message NewProjectResponse {
 service NewProjectService {
   rpc NewProject(NewProjectRequest) returns (NewProjectResponse) {}
 }
+
+message SettingsRequest {
+  string working_dir = 1;
+}
+
+message SettingsResponse {
+  string working_dir = 1;
+}
+
+service SettingsService {
+  rpc Settings(SettingsRequest) returns (SettingsResponse) {}
+}
