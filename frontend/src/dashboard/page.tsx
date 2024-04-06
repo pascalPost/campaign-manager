@@ -4,7 +4,7 @@ import { ProjectTable } from "./project-table.tsx";
 
 export default function DashboardPage() {
   return (
-    <>
+    <div>
       <h1 className="scroll-m-20 text-2xl font-semibold tracking-tight">
         Dashboard
       </h1>
@@ -16,6 +16,6 @@ export default function DashboardPage() {
       <div className="mt-4">
         <ProjectTable />
       </div>
-    </>
+    </div>
   );
 }
