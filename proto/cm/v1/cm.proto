@@ -4,15 +4,10 @@ package proto.cm.v1;
 
 option go_package = "github.com/campaign-manager/src/proto/cm/v1;protocmv1";
 
-message PingRequest {
-}
+message PingRequest {}
 
 message PingResponse {
   string message = 1;
-}
-
-service PingService {
-  rpc Ping(PingRequest) returns (PingResponse) {}
 }
 
 message NewProjectRequest {
@@ -24,18 +19,31 @@ message NewProjectResponse {
   optional uint64 project_id = 1;
 }
 
-service NewProjectService {
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  string working_dir = 1;
+  string lsf_username = 2;
+  string lsf_password = 3;
+}
+
+message SetSettingsRequest {
+  string working_dir = 1;
+  string lsf_username = 2;
+  string lsf_password = 3;
+}
+
+message SetSettingsResponse {
+  string working_dir = 1;
+  string lsf_username = 2;
+  string lsf_password = 3;
+}
+
+service CampaignManagerService {
+  rpc Ping(PingRequest) returns (PingResponse) {}
+
   rpc NewProject(NewProjectRequest) returns (NewProjectResponse) {}
-}
 
-message SettingsRequest {
-  string working_dir = 1;
-}
-
-message SettingsResponse {
-  string working_dir = 1;
-}
-
-service SettingsService {
-  rpc Settings(SettingsRequest) returns (SettingsResponse) {}
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse) {}
+  rpc SetSettings(SetSettingsRequest) returns (SetSettingsResponse) {}
 }

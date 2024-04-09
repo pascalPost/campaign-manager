@@ -3,17 +3,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { NewProjectRequest, NewProjectResponse, PingRequest, PingResponse } from "./cm_pb";
+import { GetSettingsRequest, GetSettingsResponse, NewProjectRequest, NewProjectResponse, PingRequest, PingResponse, SetSettingsRequest, SetSettingsResponse } from "./cm_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
- * @generated from service proto.cm.v1.PingService
+ * @generated from service proto.cm.v1.CampaignManagerService
  */
-export const PingService = {
-  typeName: "proto.cm.v1.PingService",
+export const CampaignManagerService = {
+  typeName: "proto.cm.v1.CampaignManagerService",
   methods: {
     /**
-     * @generated from rpc proto.cm.v1.PingService.Ping
+     * @generated from rpc proto.cm.v1.CampaignManagerService.Ping
      */
     ping: {
       name: "Ping",
@@ -21,22 +21,31 @@ export const PingService = {
       O: PingResponse,
       kind: MethodKind.Unary,
     },
-  }
-} as const;
-
-/**
- * @generated from service proto.cm.v1.NewProjectService
- */
-export const NewProjectService = {
-  typeName: "proto.cm.v1.NewProjectService",
-  methods: {
     /**
-     * @generated from rpc proto.cm.v1.NewProjectService.NewProject
+     * @generated from rpc proto.cm.v1.CampaignManagerService.NewProject
      */
     newProject: {
       name: "NewProject",
       I: NewProjectRequest,
       O: NewProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc proto.cm.v1.CampaignManagerService.GetSettings
+     */
+    getSettings: {
+      name: "GetSettings",
+      I: GetSettingsRequest,
+      O: GetSettingsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc proto.cm.v1.CampaignManagerService.SetSettings
+     */
+    setSettings: {
+      name: "SetSettings",
+      I: SetSettingsRequest,
+      O: SetSettingsResponse,
       kind: MethodKind.Unary,
     },
   }

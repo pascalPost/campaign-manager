@@ -1,16 +1,13 @@
-package service
+package db
 
 import (
 	"database/sql"
-	log2 "github.com/labstack/gommon/log"
+	cm "github.com/campaign-manager/src/types"
+	"log"
 	"log/slog"
 )
 
-type Project struct {
-	id   uint
-	name string
-}
-
+// CreateProjectsTable  creates the project table
 func CreateProjectsTable(db *sql.DB) {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS project (
@@ -20,12 +17,12 @@ func CreateProjectsTable(db *sql.DB) {
 	`
 	_, err := db.Exec(sqlStmt)
 	if err != nil {
-		log2.Fatal(err)
+		log.Fatal(err)
 	}
 }
 
 // QueryProjects returns all projects from the table (or an empty slice in case of an error)
-func QueryProjects(db *sql.DB) []Project {
+func QueryProjects(db *sql.DB) []*cm.Project {
 	rows, err := db.Query("SELECT * FROM project")
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
@@ -34,20 +31,21 @@ func QueryProjects(db *sql.DB) []Project {
 		}
 	}(rows)
 
-	projects := make([]Project, 0)
+	projects := make([]*cm.Project, 0)
 	if err != nil {
 		slog.Error("query projects", err)
 		return projects
 	}
 
 	for rows.Next() {
-		p := Project{}
-		err = rows.Scan(&p.id, &p.name)
+		var id uint
+		var name string
+		err = rows.Scan(&id, &name)
 		if err != nil {
 			slog.Error("query projects scan", err)
 			return projects
 		}
-		projects = append(projects, p)
+		projects = append(projects, cm.NewProject(id, name))
 	}
 
 	err = rows.Err()

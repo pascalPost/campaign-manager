@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./tmp/main"
-  cmd = "buf gen && go build -o ./tmp/main ./bin/server"
+  cmd = "go build -o ./tmp/main ./bin/server"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "frontend"]
   exclude_file = []
@@ -14,7 +14,7 @@ tmp_dir = "tmp"
   follow_symlink = false
   full_bin = ""
   include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html", "proto"]
+  include_ext = ["go", "tpl", "tmpl", "html"]
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"

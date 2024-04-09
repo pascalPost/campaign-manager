@@ -8,21 +8,26 @@ import ProjectPage from "@/project/[projectId]/page.tsx";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { Layout } from "@/components/layout";
 import SettingsPage from "@/settings/page.tsx";
+import { QueryClient, QueryClientProvider } from "react-query";
+
+const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <Layout>
-        <Switch>
-          <Route path="/" component={DashboardPage} />
-          <Route path="/settings" component={SettingsPage} />
-          <Route path="/project/create" component={CreateProjectPage} />
-          <Route path="/project/:projectId" component={ProjectPage} />
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <Layout>
+          <Switch>
+            <Route path="/" component={DashboardPage} />
+            <Route path="/settings" component={SettingsPage} />
+            <Route path="/project/create" component={CreateProjectPage} />
+            <Route path="/project/:projectId" component={ProjectPage} />
 
-          {/*/!* Default route in a switch *!/*/}
-          <Route>404: No such page!</Route>
-        </Switch>
-      </Layout>
-    </ThemeProvider>
+            {/*/!* Default route in a switch *!/*/}
+            <Route>404: No such page!</Route>
+          </Switch>
+        </Layout>
+      </ThemeProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );
