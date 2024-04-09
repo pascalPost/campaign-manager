@@ -33,11 +33,7 @@ message SetSettingsRequest {
   string lsf_password = 3;
 }
 
-message SetSettingsResponse {
-  string working_dir = 1;
-  string lsf_username = 2;
-  string lsf_password = 3;
-}
+message SetSettingsResponse {}
 
 service CampaignManagerService {
   rpc Ping(PingRequest) returns (PingResponse) {}

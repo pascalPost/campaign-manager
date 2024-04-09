@@ -287,21 +287,6 @@ export class SetSettingsRequest extends Message<SetSettingsRequest> {
  * @generated from message proto.cm.v1.SetSettingsResponse
  */
 export class SetSettingsResponse extends Message<SetSettingsResponse> {
-  /**
-   * @generated from field: string working_dir = 1;
-   */
-  workingDir = "";
-
-  /**
-   * @generated from field: string lsf_username = 2;
-   */
-  lsfUsername = "";
-
-  /**
-   * @generated from field: string lsf_password = 3;
-   */
-  lsfPassword = "";
-
   constructor(data?: PartialMessage<SetSettingsResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -310,9 +295,6 @@ export class SetSettingsResponse extends Message<SetSettingsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "proto.cm.v1.SetSettingsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "working_dir", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "lsf_username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "lsf_password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetSettingsResponse {

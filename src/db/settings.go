@@ -29,11 +29,11 @@ func CreateSettingsTable(db *sql.DB) {
 // GetSettings returns the settings from the table
 func GetSettings(db *sql.DB) (*types.Settings, error) {
 	var workingDir string
-	var lsfUserName string
+	var lsfUsername string
 	var lsfPassword string
 
-	id := 1
-	err := db.QueryRow("SELECT workingDir, lsfUsername, lsfPassword FROM setting WHERE id = ?;", id).Scan(workingDir, lsfUserName, lsfPassword)
+	id := 0
+	err := db.QueryRow("SELECT workingDir, lsfUsername, lsfPassword FROM setting WHERE id = ?;", id).Scan(&workingDir, &lsfUsername, &lsfPassword)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -42,12 +42,12 @@ func GetSettings(db *sql.DB) (*types.Settings, error) {
 		return nil, err
 	}
 
-	return types.NewSettings(workingDir, lsfUserName, lsfPassword), nil
+	return types.NewSettings(workingDir, lsfUsername, lsfPassword), nil
 }
 
 // SetSettings saves the given settings to the db
 func SetSettings(db *sql.DB, s *types.Settings) error {
-	id := 1
+	id := 0
 	sqlStmt := "INSERT OR REPLACE INTO setting (id, workingDir, lsfUsername, lsfPassword) VALUES (?, ?, ?, ?);"
 
 	_, err := db.Exec(sqlStmt, id, s.WorkingDir(), s.LSFUsername(), s.LSFPassword())

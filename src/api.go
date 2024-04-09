@@ -9,6 +9,7 @@ import (
 	_ "github.com/campaign-manager/src/proto/cm/v1"
 	protocmv1 "github.com/campaign-manager/src/proto/cm/v1"
 	"github.com/campaign-manager/src/proto/cm/v1/protocmv1connect"
+	"github.com/campaign-manager/src/types"
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -83,16 +84,14 @@ func (s *CampaignManagerService) SetSettings(
 	ctx context.Context,
 	req *connect.Request[protocmv1.SetSettingsRequest],
 ) (*connect.Response[protocmv1.SetSettingsResponse], error) {
-	log.Println("Request headers: ", req.Header())
-	log.Println("Request Msg: ", req.Msg)
 
-	workingDir := req.Msg.WorkingDir
+	settings := types.NewSettings(req.Msg.WorkingDir, req.Msg.LsfUsername, req.Msg.LsfPassword)
+	err := cmdb.SetSettings(s.db, settings)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO save workingDir to db
-
-	res := connect.NewResponse(&protocmv1.SetSettingsResponse{
-		WorkingDir: workingDir,
-	})
+	res := connect.NewResponse(&protocmv1.SetSettingsResponse{})
 	return res, nil
 }
 

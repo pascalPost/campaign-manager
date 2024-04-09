@@ -16,7 +16,7 @@ import { catchError, transport } from "@/lib/utils.ts";
 import { createPromiseClient } from "@connectrpc/connect";
 import { CampaignManagerService } from "@/lib/proto/cm/v1/cm_connect.ts";
 import { toast } from "sonner";
-import { useQuery } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import { TriangleAlert } from "lucide-react";
 
 const settingsSchema = z.object({
@@ -28,17 +28,40 @@ const settingsSchema = z.object({
 const client = createPromiseClient(CampaignManagerService, transport);
 
 export default function SettingsPage() {
-  const { isFetching, error } = useQuery<void, string>({
+  const queryClient = useQueryClient();
+
+  const query = useQuery<void, string>({
     queryKey: ["getSettings"],
     queryFn: () =>
       client.getSettings({}).then((res) => {
-        console.log(`Fetching: ${res}`);
+        console.log(`Fetching: ${JSON.stringify(res)}`);
         form.reset({
           workingDir: res.workingDir,
           lsfUsername: res.lsfUsername,
           lsfPassword: res.lsfPassword,
         });
       }),
+  });
+
+  const mutation = useMutation({
+    mutationFn: (settings: z.infer<typeof settingsSchema>) => {
+      return client.setSettings({
+        workingDir: settings.workingDir,
+        lsfUsername: settings.lsfUsername,
+        lsfPassword: settings.lsfPassword,
+      });
+    },
+    onSuccess: () => {
+      queryClient
+        .invalidateQueries({ queryKey: ["getSettings"] })
+        .catch((error) => console.log(error));
+    },
+    onError: (error) => {
+      toast.error(
+        `Error encountered while saving settings: ${error as string}`,
+      );
+      console.error(error);
+    },
   });
 
   const form = useForm<z.infer<typeof settingsSchema>>({
@@ -52,17 +75,7 @@ export default function SettingsPage() {
 
   function onSubmit(data: z.infer<typeof settingsSchema>) {
     console.log(data);
-    client
-      .setSettings({
-        workingDir: data.workingDir,
-      })
-      .then((response) => {
-        console.log(response);
-      })
-      .catch((error) => {
-        toast.error(`Error encountered while saving settings: ${error}`);
-        console.error(error);
-      });
+    mutation.mutate(data);
   }
 
   function onReset() {
@@ -70,10 +83,10 @@ export default function SettingsPage() {
   }
 
   // TODO insert either spinner or skeleton
-  if (isFetching) return "Loading...";
+  if (query.isFetching) return "Loading...";
 
-  if (error) {
-    toast.error(`Error encountered while fetching settings: ${error}`);
+  if (query.error) {
+    toast.error(`Error encountered while fetching settings: ${query.error}`);
     return (
       <div className="px-0 md:px-8">
         <h1 className="scroll-m-20 text-2xl font-semibold tracking-tight">
