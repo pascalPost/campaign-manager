@@ -24,7 +24,7 @@ type Project = {
 
 const client = createPromiseClient(CampaignManagerService, transport);
 
-export default function CreateProjectPage() {
+export function CreateProjectPage() {
   const form = useForm<Project>({
     defaultValues: {
       projectName: "",

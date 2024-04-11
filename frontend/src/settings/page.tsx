@@ -27,7 +27,7 @@ const settingsSchema = z.object({
 
 const client = createPromiseClient(CampaignManagerService, transport);
 
-export default function SettingsPage() {
+export function SettingsPage() {
   const queryClient = useQueryClient();
 
   const query = useQuery<void, string>({

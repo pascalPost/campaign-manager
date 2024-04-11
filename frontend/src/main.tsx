@@ -1,14 +1,15 @@
+import "./globals.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./globals.css";
 import { Route, Switch } from "wouter";
-import DashboardPage from "./dashboard/page";
-import CreateProjectPage from "@/project/create/page";
-import ProjectPage from "@/project/[projectId]/page.tsx";
+import { DashboardPage } from "./dashboard/page";
+import { CreateProjectPage } from "@/project/create/page";
+import { ProjectPage } from "@/project/[projectId]/page.tsx";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { Layout } from "@/components/layout";
-import SettingsPage from "@/settings/page.tsx";
+import { SettingsPage } from "@/settings/page.tsx";
 import { QueryClient, QueryClientProvider } from "react-query";
+import { SchedulerPage } from "@/scheduler/page.tsx";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/settings" component={SettingsPage} />
             <Route path="/project/create" component={CreateProjectPage} />
             <Route path="/project/:projectId" component={ProjectPage} />
+            <Route path="/scheduler" component={SchedulerPage} />
 
             {/*/!* Default route in a switch *!/*/}
             <Route>404: No such page!</Route>

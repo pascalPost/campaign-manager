@@ -53,11 +53,7 @@ const jobs: Job[] = [
   },
 ];
 
-export default function ProjectPage({
-  params,
-}: {
-  params: { projectId: string };
-}) {
+export function ProjectPage({ params }: { params: { projectId: string } }) {
   return (
     <div>
       <h1 className="scroll-m-20 text-2xl font-semibold tracking-tight">
