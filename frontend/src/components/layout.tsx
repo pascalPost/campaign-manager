@@ -5,14 +5,18 @@ import { Toaster } from "@/components/ui/sonner.tsx";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   return (
-    <>
+    <div className="flex h-screen flex-1 flex-col">
       <Header />
-      <div className="w-full flex-1 px-6">
-        <aside className="fixed"></aside>
-        <main className="py-6">{children}</main>
+      <div className="flex h-full flex-row">
+        <aside className="hidden h-full min-w-64 border-r px-6 py-6 lg:flex">
+          Side
+        </aside>
+        <div className="w-full px-6 py-6">
+          <main className="flex w-full flex-col">{children}</main>
+        </div>
       </div>
       <Toaster richColors />
       <Footer />
-    </>
+    </div>
   );
 };

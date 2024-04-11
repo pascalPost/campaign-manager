@@ -1,6 +1,6 @@
 export function Footer() {
   return (
-    <footer className="fixed bottom-0 hidden w-full justify-between border-t px-6 py-1 md:flex ">
+    <footer className="hidden w-full justify-between border-t px-6 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:flex">
       <div>
         <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
           Built by Pascal Post. The source code is available on{" "}
