@@ -2,7 +2,6 @@ package cm
 
 import (
 	"connectrpc.com/connect"
-	connectcors "connectrpc.com/cors"
 	"context"
 	"database/sql"
 	cmdb "github.com/campaign-manager/src/db"
@@ -12,10 +11,13 @@ import (
 	"github.com/campaign-manager/src/proto/cm/v1/protocmv1connect"
 	"github.com/campaign-manager/src/types"
 	"github.com/rs/cors"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"github.com/swaggest/openapi-go/openapi31"
+	"github.com/swaggest/rest/web"
+	swgui "github.com/swaggest/swgui/v5emb"
+	"github.com/swaggest/usecase"
 	"log"
 	"net/http"
+	"os"
 )
 
 type CampaignManagerService struct {
@@ -25,17 +27,6 @@ type CampaignManagerService struct {
 
 func NewCampaignManagerService(db *sql.DB) *CampaignManagerService {
 	return &CampaignManagerService{db: db}
-}
-
-func (s *CampaignManagerService) Ping(
-	ctx context.Context,
-	req *connect.Request[protocmv1.PingRequest],
-) (*connect.Response[protocmv1.PingResponse], error) {
-	log.Println("Request headers: ", req.Header())
-	res := connect.NewResponse(&protocmv1.PingResponse{
-		Message: "OK",
-	})
-	return res, nil
 }
 
 func (s *CampaignManagerService) NewProject(
@@ -125,29 +116,73 @@ func (s *CampaignManagerService) GetLsfJobs(
 	return res, nil
 }
 
-// withCORS adds CORS support to a Connect HTTP handler.
-func withCORS(h http.Handler) http.Handler {
-	middleware := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"},
-		AllowedMethods: connectcors.AllowedMethods(),
-		AllowedHeaders: connectcors.AllowedHeaders(),
-		ExposedHeaders: connectcors.ExposedHeaders(),
-	})
-	return middleware.Handler(h)
+type pingInput struct{}
+
+type pingOutput struct {
+	Message string `json:"message"`
+}
+
+type lsfJobInput struct{}
+
+type lsfJobOutput struct {
+	Jobs []lsf.Job `json:"jobs"`
 }
 
 func Server() {
 	db := cmdb.ConnectDB()
 	defer cmdb.DisconnectDB(db)
 
-	mux := http.NewServeMux()
-	mux.Handle(protocmv1connect.NewCampaignManagerServiceHandler(NewCampaignManagerService(db)))
-	err := http.ListenAndServe(
-		"localhost:8080",
-		// Use h2c so we can serve HTTP/2 without TLS.
-		withCORS(h2c.NewHandler(mux, &http2.Server{})),
-	)
+	// openapi
+	r := openapi31.NewReflector()
+	s := web.NewService(r)
+
+	// Init API documentation schema.
+	s.OpenAPISchema().SetTitle("Campaign Manager")
+	s.OpenAPISchema().SetDescription("Campaign Manager Rest API.")
+	s.OpenAPISchema().SetVersion("v0.1.0")
+
+	// CORS
+	s.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowCredentials: true,
+		//Enable Debugging for testing, consider disabling in production
+		//Debug: true,
+	}).Handler)
+
+	{
+		u := usecase.NewInteractor(func(ctx context.Context, input pingInput, output *pingOutput) error {
+			output.Message = "OK"
+			return nil
+		})
+		s.Get("/ping", u)
+	}
+
+	{
+		u := usecase.NewInteractor(func(ctx context.Context, input lsfJobInput, output *lsfJobOutput) error {
+			output.Jobs = lsf.Jobs()
+			return nil
+		})
+		u.SetTitle("LSF Jobs")
+		u.SetDescription("Returns all recent LSF Jobs.")
+		s.Get("/lsf/job", u)
+	}
+
+	// generate opanapi file
+	schema, err := r.Spec.MarshalYAML()
 	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.WriteFile("docs/campaign-manager.yaml", schema, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Swagger UI endpoint at /docs.
+	s.Docs("/docs", swgui.New)
+
+	// Start server.
+	log.Println("http://localhost:8011/docs")
+	if err := http.ListenAndServe("localhost:8011", s); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -3,15 +3,15 @@ package lsf
 import "time"
 
 type Job struct {
-	Command    string
-	ExHosts    []string
-	FromHost   string
-	JobId      string
-	JobName    string
-	JobStatus  string
-	Queue      string
-	SubmitTime time.Time
-	User       string
+	Command    string    `json:"command"`
+	ExHosts    []string  `json:"exHosts"`
+	FromHost   string    `json:"fromHosts"`
+	JobId      string    `json:"jobId"`
+	JobName    string    `json:"jobName"`
+	JobStatus  string    `json:"jobStatus"`
+	Queue      string    `json:"queue"`
+	SubmitTime time.Time `json:"submitTime"`
+	User       string    `json:"user"`
 }
 
 func Jobs() []Job {

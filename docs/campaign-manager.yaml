@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  description: Campaign Manager Rest API.
+  title: Campaign Manager
+  version: v0.1.0
+paths:
+  /lsf/job:
+    get:
+      description: Returns all recent LSF Jobs.
+      operationId: campaign-manager/src.Server2
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SrcLsfJobOutput'
+          description: OK
+      summary: LSF Jobs
+  /ping:
+    get:
+      operationId: campaign-manager/src.Server
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SrcPingOutput'
+          description: OK
+      summary: Server
+components:
+  schemas:
+    LsfJob:
+      properties:
+        command:
+          type: string
+        exHosts:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        fromHosts:
+          type: string
+        jobId:
+          type: string
+        jobName:
+          type: string
+        jobStatus:
+          type: string
+        queue:
+          type: string
+        submitTime:
+          format: date-time
+          type: string
+        user:
+          type: string
+      type: object
+    SrcLsfJobOutput:
+      properties:
+        jobs:
+          items:
+            $ref: '#/components/schemas/LsfJob'
+          type:
+          - array
+          - "null"
+      type: object
+    SrcPingOutput:
+      properties:
+        message:
+          type: string
+      type: object
