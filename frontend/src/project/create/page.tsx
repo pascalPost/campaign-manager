@@ -81,14 +81,10 @@ export function CreateProjectPage() {
                 <FormControl>
                   <Input
                     {...fieldProps}
-                    placeholder="CSV"
                     type="file"
                     accept=".csv"
                     onChange={(event) => {
-                      fieldProps.value =
-                        (event.target.files && event.target.files[0].name) ??
-                        "";
-                      onChange(event.target.files && event.target.files[0]);
+                      onChange(event.target.files[0].name);
                     }}
                   />
                 </FormControl>

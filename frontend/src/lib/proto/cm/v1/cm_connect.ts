@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetSettingsRequest, GetSettingsResponse, NewProjectRequest, NewProjectResponse, PingRequest, PingResponse, SetSettingsRequest, SetSettingsResponse } from "./cm_pb";
+import { GetLsfJobsRequest, GetLsfJobsResponse, GetSettingsRequest, GetSettingsResponse, NewProjectRequest, NewProjectResponse, PingRequest, PingResponse, SetSettingsRequest, SetSettingsResponse } from "./cm_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -46,6 +46,15 @@ export const CampaignManagerService = {
       name: "SetSettings",
       I: SetSettingsRequest,
       O: SetSettingsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc proto.cm.v1.CampaignManagerService.GetLsfJobs
+     */
+    getLsfJobs: {
+      name: "GetLsfJobs",
+      I: GetLsfJobsRequest,
+      O: GetLsfJobsResponse,
       kind: MethodKind.Unary,
     },
   }

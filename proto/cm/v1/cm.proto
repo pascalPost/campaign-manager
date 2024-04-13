@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package proto.cm.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/campaign-manager/src/proto/cm/v1;protocmv1";
 
 message PingRequest {}
@@ -35,6 +37,24 @@ message SetSettingsRequest {
 
 message SetSettingsResponse {}
 
+message Job {
+  string command = 1;
+  repeated string ex_hosts = 2;
+  string from_host = 3;
+  string job_id = 4;
+  string job_name = 5;
+  string job_status = 6;
+  string queue = 7;
+  google.protobuf.Timestamp submit_time = 8;
+  string user = 9;
+}
+
+message GetLsfJobsRequest {}
+
+message GetLsfJobsResponse {
+  repeated  Job jobs = 1;
+}
+
 service CampaignManagerService {
   rpc Ping(PingRequest) returns (PingResponse) {}
 
@@ -42,4 +62,6 @@ service CampaignManagerService {
 
   rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse) {}
   rpc SetSettings(SetSettingsRequest) returns (SetSettingsResponse) {}
+
+  rpc GetLsfJobs(GetLsfJobsRequest) returns (GetLsfJobsResponse) {}
 }

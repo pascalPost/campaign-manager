@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	cmdb "github.com/campaign-manager/src/db"
+	"github.com/campaign-manager/src/lsf"
 	_ "github.com/campaign-manager/src/proto/cm/v1"
 	protocmv1 "github.com/campaign-manager/src/proto/cm/v1"
 	"github.com/campaign-manager/src/proto/cm/v1/protocmv1connect"
@@ -81,7 +82,7 @@ func (s *CampaignManagerService) GetSettings(
 }
 
 func (s *CampaignManagerService) SetSettings(
-	ctx context.Context,
+	_ context.Context,
 	req *connect.Request[protocmv1.SetSettingsRequest],
 ) (*connect.Response[protocmv1.SetSettingsResponse], error) {
 
@@ -92,6 +93,35 @@ func (s *CampaignManagerService) SetSettings(
 	}
 
 	res := connect.NewResponse(&protocmv1.SetSettingsResponse{})
+	return res, nil
+}
+
+func (s *CampaignManagerService) GetLsfJobs(
+	_ context.Context,
+	_ *connect.Request[protocmv1.GetLsfJobsRequest],
+) (*connect.Response[protocmv1.GetLsfJobsResponse], error) {
+	jobs := lsf.Jobs()
+
+	jobs_res := make([]*protocmv1.Job, 0)
+
+	for _, job := range jobs {
+		jobs_res = append(jobs_res, &protocmv1.Job{
+			Command:   job.Command,
+			ExHosts:   job.ExHosts,
+			FromHost:  job.FromHost,
+			JobId:     job.JobId,
+			JobName:   job.JobName,
+			JobStatus: job.JobStatus,
+			Queue:     job.Queue,
+			//SubmitTime: job.SubmitTime,
+			User: job.User,
+		})
+	}
+
+	res := connect.NewResponse(&protocmv1.GetLsfJobsResponse{
+		Jobs: jobs_res,
+	})
+
 	return res, nil
 }
 

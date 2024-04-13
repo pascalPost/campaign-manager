@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 
 /**
  * @generated from message proto.cm.v1.PingRequest
@@ -311,6 +311,159 @@ export class SetSettingsResponse extends Message<SetSettingsResponse> {
 
   static equals(a: SetSettingsResponse | PlainMessage<SetSettingsResponse> | undefined, b: SetSettingsResponse | PlainMessage<SetSettingsResponse> | undefined): boolean {
     return proto3.util.equals(SetSettingsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message proto.cm.v1.Job
+ */
+export class Job extends Message<Job> {
+  /**
+   * @generated from field: string command = 1;
+   */
+  command = "";
+
+  /**
+   * @generated from field: repeated string ex_hosts = 2;
+   */
+  exHosts: string[] = [];
+
+  /**
+   * @generated from field: string from_host = 3;
+   */
+  fromHost = "";
+
+  /**
+   * @generated from field: string job_id = 4;
+   */
+  jobId = "";
+
+  /**
+   * @generated from field: string job_name = 5;
+   */
+  jobName = "";
+
+  /**
+   * @generated from field: string job_status = 6;
+   */
+  jobStatus = "";
+
+  /**
+   * @generated from field: string queue = 7;
+   */
+  queue = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp submit_time = 8;
+   */
+  submitTime?: Timestamp;
+
+  /**
+   * @generated from field: string user = 9;
+   */
+  user = "";
+
+  constructor(data?: PartialMessage<Job>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "proto.cm.v1.Job";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "command", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "ex_hosts", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "from_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "job_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "job_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "job_status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "queue", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "submit_time", kind: "message", T: Timestamp },
+    { no: 9, name: "user", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Job {
+    return new Job().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Job {
+    return new Job().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Job {
+    return new Job().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Job | PlainMessage<Job> | undefined, b: Job | PlainMessage<Job> | undefined): boolean {
+    return proto3.util.equals(Job, a, b);
+  }
+}
+
+/**
+ * @generated from message proto.cm.v1.GetLsfJobsRequest
+ */
+export class GetLsfJobsRequest extends Message<GetLsfJobsRequest> {
+  constructor(data?: PartialMessage<GetLsfJobsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "proto.cm.v1.GetLsfJobsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLsfJobsRequest {
+    return new GetLsfJobsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetLsfJobsRequest {
+    return new GetLsfJobsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetLsfJobsRequest {
+    return new GetLsfJobsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetLsfJobsRequest | PlainMessage<GetLsfJobsRequest> | undefined, b: GetLsfJobsRequest | PlainMessage<GetLsfJobsRequest> | undefined): boolean {
+    return proto3.util.equals(GetLsfJobsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message proto.cm.v1.GetLsfJobsResponse
+ */
+export class GetLsfJobsResponse extends Message<GetLsfJobsResponse> {
+  /**
+   * @generated from field: repeated proto.cm.v1.Job jobs = 1;
+   */
+  jobs: Job[] = [];
+
+  constructor(data?: PartialMessage<GetLsfJobsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "proto.cm.v1.GetLsfJobsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "jobs", kind: "message", T: Job, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLsfJobsResponse {
+    return new GetLsfJobsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetLsfJobsResponse {
+    return new GetLsfJobsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetLsfJobsResponse {
+    return new GetLsfJobsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetLsfJobsResponse | PlainMessage<GetLsfJobsResponse> | undefined, b: GetLsfJobsResponse | PlainMessage<GetLsfJobsResponse> | undefined): boolean {
+    return proto3.util.equals(GetLsfJobsResponse, a, b);
   }
 }
 

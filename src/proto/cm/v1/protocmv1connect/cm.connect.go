@@ -45,6 +45,9 @@ const (
 	// CampaignManagerServiceSetSettingsProcedure is the fully-qualified name of the
 	// CampaignManagerService's SetSettings RPC.
 	CampaignManagerServiceSetSettingsProcedure = "/proto.cm.v1.CampaignManagerService/SetSettings"
+	// CampaignManagerServiceGetLsfJobsProcedure is the fully-qualified name of the
+	// CampaignManagerService's GetLsfJobs RPC.
+	CampaignManagerServiceGetLsfJobsProcedure = "/proto.cm.v1.CampaignManagerService/GetLsfJobs"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -54,6 +57,7 @@ var (
 	campaignManagerServiceNewProjectMethodDescriptor  = campaignManagerServiceServiceDescriptor.Methods().ByName("NewProject")
 	campaignManagerServiceGetSettingsMethodDescriptor = campaignManagerServiceServiceDescriptor.Methods().ByName("GetSettings")
 	campaignManagerServiceSetSettingsMethodDescriptor = campaignManagerServiceServiceDescriptor.Methods().ByName("SetSettings")
+	campaignManagerServiceGetLsfJobsMethodDescriptor  = campaignManagerServiceServiceDescriptor.Methods().ByName("GetLsfJobs")
 )
 
 // CampaignManagerServiceClient is a client for the proto.cm.v1.CampaignManagerService service.
@@ -62,6 +66,7 @@ type CampaignManagerServiceClient interface {
 	NewProject(context.Context, *connect.Request[v1.NewProjectRequest]) (*connect.Response[v1.NewProjectResponse], error)
 	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
 	SetSettings(context.Context, *connect.Request[v1.SetSettingsRequest]) (*connect.Response[v1.SetSettingsResponse], error)
+	GetLsfJobs(context.Context, *connect.Request[v1.GetLsfJobsRequest]) (*connect.Response[v1.GetLsfJobsResponse], error)
 }
 
 // NewCampaignManagerServiceClient constructs a client for the proto.cm.v1.CampaignManagerService
@@ -98,6 +103,12 @@ func NewCampaignManagerServiceClient(httpClient connect.HTTPClient, baseURL stri
 			connect.WithSchema(campaignManagerServiceSetSettingsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getLsfJobs: connect.NewClient[v1.GetLsfJobsRequest, v1.GetLsfJobsResponse](
+			httpClient,
+			baseURL+CampaignManagerServiceGetLsfJobsProcedure,
+			connect.WithSchema(campaignManagerServiceGetLsfJobsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -107,6 +118,7 @@ type campaignManagerServiceClient struct {
 	newProject  *connect.Client[v1.NewProjectRequest, v1.NewProjectResponse]
 	getSettings *connect.Client[v1.GetSettingsRequest, v1.GetSettingsResponse]
 	setSettings *connect.Client[v1.SetSettingsRequest, v1.SetSettingsResponse]
+	getLsfJobs  *connect.Client[v1.GetLsfJobsRequest, v1.GetLsfJobsResponse]
 }
 
 // Ping calls proto.cm.v1.CampaignManagerService.Ping.
@@ -129,6 +141,11 @@ func (c *campaignManagerServiceClient) SetSettings(ctx context.Context, req *con
 	return c.setSettings.CallUnary(ctx, req)
 }
 
+// GetLsfJobs calls proto.cm.v1.CampaignManagerService.GetLsfJobs.
+func (c *campaignManagerServiceClient) GetLsfJobs(ctx context.Context, req *connect.Request[v1.GetLsfJobsRequest]) (*connect.Response[v1.GetLsfJobsResponse], error) {
+	return c.getLsfJobs.CallUnary(ctx, req)
+}
+
 // CampaignManagerServiceHandler is an implementation of the proto.cm.v1.CampaignManagerService
 // service.
 type CampaignManagerServiceHandler interface {
@@ -136,6 +153,7 @@ type CampaignManagerServiceHandler interface {
 	NewProject(context.Context, *connect.Request[v1.NewProjectRequest]) (*connect.Response[v1.NewProjectResponse], error)
 	GetSettings(context.Context, *connect.Request[v1.GetSettingsRequest]) (*connect.Response[v1.GetSettingsResponse], error)
 	SetSettings(context.Context, *connect.Request[v1.SetSettingsRequest]) (*connect.Response[v1.SetSettingsResponse], error)
+	GetLsfJobs(context.Context, *connect.Request[v1.GetLsfJobsRequest]) (*connect.Response[v1.GetLsfJobsResponse], error)
 }
 
 // NewCampaignManagerServiceHandler builds an HTTP handler from the service implementation. It
@@ -168,6 +186,12 @@ func NewCampaignManagerServiceHandler(svc CampaignManagerServiceHandler, opts ..
 		connect.WithSchema(campaignManagerServiceSetSettingsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	campaignManagerServiceGetLsfJobsHandler := connect.NewUnaryHandler(
+		CampaignManagerServiceGetLsfJobsProcedure,
+		svc.GetLsfJobs,
+		connect.WithSchema(campaignManagerServiceGetLsfJobsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/proto.cm.v1.CampaignManagerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CampaignManagerServicePingProcedure:
@@ -178,6 +202,8 @@ func NewCampaignManagerServiceHandler(svc CampaignManagerServiceHandler, opts ..
 			campaignManagerServiceGetSettingsHandler.ServeHTTP(w, r)
 		case CampaignManagerServiceSetSettingsProcedure:
 			campaignManagerServiceSetSettingsHandler.ServeHTTP(w, r)
+		case CampaignManagerServiceGetLsfJobsProcedure:
+			campaignManagerServiceGetLsfJobsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -201,4 +227,8 @@ func (UnimplementedCampaignManagerServiceHandler) GetSettings(context.Context, *
 
 func (UnimplementedCampaignManagerServiceHandler) SetSettings(context.Context, *connect.Request[v1.SetSettingsRequest]) (*connect.Response[v1.SetSettingsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("proto.cm.v1.CampaignManagerService.SetSettings is not implemented"))
+}
+
+func (UnimplementedCampaignManagerServiceHandler) GetLsfJobs(context.Context, *connect.Request[v1.GetLsfJobsRequest]) (*connect.Response[v1.GetLsfJobsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("proto.cm.v1.CampaignManagerService.GetLsfJobs is not implemented"))
 }
