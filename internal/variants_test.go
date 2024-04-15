@@ -1,4 +1,4 @@
-package cm
+package internal
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestGenerateFromSimpleMatrix(t *testing.T) {
-	config := &Config{
+	config := &Input{
 		Templates: []string{"template1", "template2"},
 		Matrix: map[string][]string{
 			"key1": {"v1.1", "v1.2"},
@@ -24,7 +24,7 @@ func TestGenerateFromSimpleMatrix(t *testing.T) {
 }
 
 func TestGenerateSimpleExclude(t *testing.T) {
-	config := &Config{
+	config := &Input{
 		Templates: []string{"template1", "template2"},
 		Matrix: map[string][]string{
 			"key1": {"v1.1", "v1.2"},
@@ -44,7 +44,7 @@ func TestGenerateSimpleExclude(t *testing.T) {
 }
 
 func TestGenerateComplexExclude(t *testing.T) {
-	config := &Config{
+	config := &Input{
 		Templates: []string{"template1", "template2"},
 		Matrix: map[string][]string{
 			"key1": {"v1.1", "v1.2", "v1.3"},

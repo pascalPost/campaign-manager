@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/campaign-manager/src"
+	cm "github.com/campaign-manager/internal"
 	"log"
 	"os"
 )
@@ -12,7 +12,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config, err := cm.ParseConfig(file)
+	config, err := cm.ParseInput(file)
 	if err != nil {
 		log.Fatal(err)
 	}

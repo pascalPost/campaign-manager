@@ -1,4 +1,4 @@
-package cm
+package internal
 
 import (
 	"bytes"

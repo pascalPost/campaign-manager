@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	cm "github.com/campaign-manager/src/types"
+	cm "github.com/campaign-manager/types"
 	"log"
 	"log/slog"
 )

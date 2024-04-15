@@ -1,11 +1,11 @@
-package cm
+package internal
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestConfig(t *testing.T) {
+func TestInput(t *testing.T) {
 	variantsYaml := `
 templates:
   - template1
@@ -26,9 +26,9 @@ include:
     key2: v2.3
 `
 
-	config, err := ParseConfig([]byte(variantsYaml))
+	config, err := ParseInput([]byte(variantsYaml))
 	assert.NoError(t, err)
-	assert.Equal(t, &Config{
+	assert.Equal(t, &Input{
 		Templates: []string{"template1", "template2"},
 		Matrix: map[string][]string{
 			"key1": {"v1.1", "v1.2"},

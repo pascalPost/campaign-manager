@@ -1,6 +1,6 @@
-package cm
+package internal
 
-func GenerateVariants(config *Config) []map[string]string {
+func GenerateVariants(config *Input) []map[string]string {
 	variants := generateFromMatrix(config.Matrix)
 	variants = removeExcludes(variants, config.Exclude)
 	variants = addIncludes(variants, config.Include)

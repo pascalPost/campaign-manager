@@ -1,7 +1,7 @@
 package test
 
 import (
-	"github.com/campaign-manager/src"
+	cm "github.com/campaign-manager/internal"
 	"testing"
 )
 

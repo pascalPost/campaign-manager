@@ -1,7 +1,9 @@
 package main
 
-import "github.com/campaign-manager/src"
+import (
+	"github.com/campaign-manager/api"
+)
 
 func main() {
-	cm.Server()
+	api.Server()
 }
