@@ -1,4 +1,4 @@
-package internal
+package task_creation
 
 import (
 	"gopkg.in/yaml.v3"

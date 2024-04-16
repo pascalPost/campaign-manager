@@ -1,4 +1,4 @@
-package internal
+package task_creation
 
 func GenerateVariants(config *Input) []map[string]string {
 	variants := generateFromMatrix(config.Matrix)

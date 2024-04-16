@@ -3,9 +3,9 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"github.com/campaign-manager/config"
-	"github.com/campaign-manager/db"
-	"github.com/campaign-manager/lsf"
+	"github.com/campaign-manager/internal/config"
+	"github.com/campaign-manager/internal/db"
+	"github.com/campaign-manager/internal/lsf"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -200,7 +200,7 @@ func Server() {
 			log.Fatal(err)
 		}
 
-		err = os.WriteFile("./api/openapi.yaml", schema, 0666)
+		err = os.WriteFile("./internal/api/openapi.yaml", schema, 0666)
 		if err != nil {
 			log.Fatal(err)
 		}

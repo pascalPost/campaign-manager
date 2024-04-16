@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	cm "github.com/campaign-manager/internal"
+	"github.com/campaign-manager/internal/task_creation"
 	"log"
 	"os"
 )
@@ -12,14 +12,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config, err := cm.ParseInput(file)
+	config, err := task_creation.ParseInput(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Printf("%v\n", config)
 
-	variants := cm.GenerateVariants(config)
+	variants := task_creation.GenerateVariants(config)
 
 	fmt.Printf("%v\n", variants)
 

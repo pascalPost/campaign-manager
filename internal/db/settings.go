@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
-	"github.com/campaign-manager/types"
+	"github.com/campaign-manager/internal/types"
 	"log"
 	"log/slog"
 )

@@ -1,0 +1,31 @@
+{
+  "tasks": [
+    {
+      "dir": "/home/pascalp/workspace/campaign-manager/test/tmp/c9fadb45a601625a",
+      "id": "c9fadb45a601625a",
+      "key1": "p1.1",
+      "key2": "p1.2",
+      "key3": "p1.3",
+      "key4": "p1.4",
+      "key5": "p1.5"
+    },
+    {
+      "dir": "/home/pascalp/workspace/campaign-manager/test/tmp/29c881f521bf3450",
+      "id": "29c881f521bf3450",
+      "key1": "p2.1",
+      "key2": "p2.2",
+      "key3": "p2.3",
+      "key4": "p2.4",
+      "key5": "p2.5"
+    },
+    {
+      "dir": "/home/pascalp/workspace/campaign-manager/test/tmp/9e65ce8d3a1bb8a0",
+      "id": "9e65ce8d3a1bb8a0",
+      "key1": "p3.1",
+      "key2": "p3.2",
+      "key3": "p3.3",
+      "key4": "p3.4",
+      "key5": "p3.5"
+    }
+  ]
+}
