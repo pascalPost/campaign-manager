@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Campaign Manager
+  description: Campaign Manager Rest API.
+  version: 0.1.0
+
+paths:
+  /ping:
+    get:
+      summary: Ping server
+      responses:
+        "200":
+          description: Success response
+  /tasks:
+    get:
+      summary: List tasks
+    post:
+      summary: Add new task
+  /projects:
+    get:
+      summary: List projects
+    post:
+      summary: Add new projects
+  /files:
+    get:
+      summary: List files
+
+
+components:
+  schemas: {}
