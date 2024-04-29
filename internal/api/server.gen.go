@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -19,11 +20,45 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// File defines model for File.
+type File struct {
+	IsDir bool   `json:"isDir"`
+	Name  string `json:"name"`
+}
+
+// DeleteFilesJSONBody defines parameters for DeleteFiles.
+type DeleteFilesJSONBody struct {
+	Path string `json:"path"`
+}
+
+// GetFilesJSONBody defines parameters for GetFiles.
+type GetFilesJSONBody struct {
+	Path string `json:"path"`
+}
+
+// DeleteFilesJSONRequestBody defines body for DeleteFiles for application/json ContentType.
+type DeleteFilesJSONRequestBody DeleteFilesJSONBody
+
+// GetFilesJSONRequestBody defines body for GetFiles for application/json ContentType.
+type GetFilesJSONRequestBody GetFilesJSONBody
+
+// PostFilesJSONRequestBody defines body for PostFiles for application/json ContentType.
+type PostFilesJSONRequestBody = File
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// List files
+	// Delete files or folders
+	// (DELETE /files)
+	DeleteFiles(w http.ResponseWriter, r *http.Request)
+	// List files including folders
 	// (GET /files)
 	GetFiles(w http.ResponseWriter, r *http.Request)
+	// Add new file or folder
+	// (POST /files)
+	PostFiles(w http.ResponseWriter, r *http.Request)
+	// Update files
+	// (PUT /files)
+	PutFiles(w http.ResponseWriter, r *http.Request)
 	// Ping server
 	// (GET /ping)
 	GetPing(w http.ResponseWriter, r *http.Request)
@@ -45,9 +80,27 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
-// List files
+// Delete files or folders
+// (DELETE /files)
+func (_ Unimplemented) DeleteFiles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List files including folders
 // (GET /files)
 func (_ Unimplemented) GetFiles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add new file or folder
+// (POST /files)
+func (_ Unimplemented) PostFiles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update files
+// (PUT /files)
+func (_ Unimplemented) PutFiles(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -90,12 +143,57 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// DeleteFiles operation middleware
+func (siw *ServerInterfaceWrapper) DeleteFiles(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteFiles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetFiles operation middleware
 func (siw *ServerInterfaceWrapper) GetFiles(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetFiles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// PostFiles operation middleware
+func (siw *ServerInterfaceWrapper) PostFiles(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostFiles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// PutFiles operation middleware
+func (siw *ServerInterfaceWrapper) PutFiles(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutFiles(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -294,7 +392,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/files", wrapper.DeleteFiles)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/files", wrapper.GetFiles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/files", wrapper.PostFiles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/files", wrapper.PutFiles)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/ping", wrapper.GetPing)
@@ -315,11 +422,68 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
+type DeleteFilesRequestObject struct {
+	Body *DeleteFilesJSONRequestBody
+}
+
+type DeleteFilesResponseObject interface {
+	VisitDeleteFilesResponse(w http.ResponseWriter) error
+}
+
+type DeleteFiles204Response struct {
+}
+
+func (response DeleteFiles204Response) VisitDeleteFilesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteFiles404Response struct {
+}
+
+func (response DeleteFiles404Response) VisitDeleteFilesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(404)
+	return nil
+}
+
 type GetFilesRequestObject struct {
+	Body *GetFilesJSONRequestBody
 }
 
 type GetFilesResponseObject interface {
 	VisitGetFilesResponse(w http.ResponseWriter) error
+}
+
+type GetFiles200JSONResponse []File
+
+func (response GetFiles200JSONResponse) VisitGetFilesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostFilesRequestObject struct {
+	Body *PostFilesJSONRequestBody
+}
+
+type PostFilesResponseObject interface {
+	VisitPostFilesResponse(w http.ResponseWriter) error
+}
+
+type PostFiles204Response struct {
+}
+
+func (response PostFiles204Response) VisitPostFilesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PutFilesRequestObject struct {
+}
+
+type PutFilesResponseObject interface {
+	VisitPutFilesResponse(w http.ResponseWriter) error
 }
 
 type GetPingRequestObject struct {
@@ -367,9 +531,18 @@ type PostTasksResponseObject interface {
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// List files
+	// Delete files or folders
+	// (DELETE /files)
+	DeleteFiles(ctx context.Context, request DeleteFilesRequestObject) (DeleteFilesResponseObject, error)
+	// List files including folders
 	// (GET /files)
 	GetFiles(ctx context.Context, request GetFilesRequestObject) (GetFilesResponseObject, error)
+	// Add new file or folder
+	// (POST /files)
+	PostFiles(ctx context.Context, request PostFilesRequestObject) (PostFilesResponseObject, error)
+	// Update files
+	// (PUT /files)
+	PutFiles(ctx context.Context, request PutFilesRequestObject) (PutFilesResponseObject, error)
 	// Ping server
 	// (GET /ping)
 	GetPing(ctx context.Context, request GetPingRequestObject) (GetPingResponseObject, error)
@@ -416,9 +589,47 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// DeleteFiles operation middleware
+func (sh *strictHandler) DeleteFiles(w http.ResponseWriter, r *http.Request) {
+	var request DeleteFilesRequestObject
+
+	var body DeleteFilesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteFiles(ctx, request.(DeleteFilesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteFiles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteFilesResponseObject); ok {
+		if err := validResponse.VisitDeleteFilesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetFiles operation middleware
 func (sh *strictHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 	var request GetFilesRequestObject
+
+	var body GetFilesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetFiles(ctx, request.(GetFilesRequestObject))
@@ -433,6 +644,61 @@ func (sh *strictHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetFilesResponseObject); ok {
 		if err := validResponse.VisitGetFilesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostFiles operation middleware
+func (sh *strictHandler) PostFiles(w http.ResponseWriter, r *http.Request) {
+	var request PostFilesRequestObject
+
+	var body PostFilesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostFiles(ctx, request.(PostFilesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostFiles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostFilesResponseObject); ok {
+		if err := validResponse.VisitPostFilesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutFiles operation middleware
+func (sh *strictHandler) PutFiles(w http.ResponseWriter, r *http.Request) {
+	var request PutFilesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutFiles(ctx, request.(PutFilesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutFiles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutFilesResponseObject); ok {
+		if err := validResponse.VisitPutFilesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -563,11 +829,15 @@ func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/4zQ30rDMBQG8FcJ33Xoqt7lbgjKQKGoLxDasxptk5CTTqTk3SWt9Q8b3a5ako/f+U5G",
-	"1K73zpKNDDUmCWP3DmpEQ1wH46NxFgq3uvfatFY8aqtbCuKJOIpttSsgEU3s6EQIEgcKPAtlcVWUSBLO",
-	"k9XeQOFmOpLwOr7m6djsTUfTX0sxf5ynoHOFXQOFe4p3U0AiEHtnOYft0HUSPPS9Dp9QeDAcxQylJLHx",
-	"xrZrZJXv/4kjrsvy+A2eh7omZrEkJ/53bnYEUzhQ+B4c3BvVcXWfasmcX+mHSxLe8QmvcnwhuG0aYenj",
-	"j5kLR83vq21fpsD5qjO02vMCaimZNaSU0lcAAAD//3orASStAgAA",
+	"H4sIAAAAAAAC/8xTTW/TQBD9K6uBo4kD7cm3QlVUCVDExwn1sLUnyRZ7d9kZt0SR/zuacZykjUlAvXDy",
+	"yvv2zXtv366hDE0MHj0TFGugcomN1eWVq1G+MYWIiR3qX0eXLsmCVxGhgNsQarQeugy8bXBvhzg5v4Cu",
+	"yyDhz9YlrKD43qOyDc9NJ9vOz4McrJDK5CK74KGAd7aJ1i28+Wi9XWAyn5HYXMyuJ5ABOxZ1ByDI4B4T",
+	"9QzTyevJVJSFiN5GBwWcTaaTM8ggWl6qn3zu6t5ZhTWyGhC/VlRcV1DApf6/UlhvBYnfhmol0DJ4Rs+y",
+	"tDHWrtRz+R2JgCHOwxRl/OmoFHWTDahwe4clQ9f1OIrBU0/3Znp+mN+XtiyRyDw4XhofzCC1y+B8DP8p",
+	"+Ff4yxE7vzA6WuZQ2zQ2rbY5GM3LhGTmoa4wkfAtkA9ze4/8n4c2/ScxjrHRgy8TzqGAF/nu6eSbd5Pr",
+	"o+m2021KdgU6e/RynkT8wRFvAna+rNtKrmIv5xhoJOhZoGcnfdrTc1v3yOhFVRmPD+p11yW12I45bPcM",
+	"7hQ8ovwWKzvUU6flUepRrP/Yzpnsj5di3NOAfGJGeAxhuhcHOjgFKR0dHT5gjljSOmzJjt7/39ANoe8Y",
+	"RSxb+nFU6VcFnJLZ0xzVeJJoEChcWrjfAQAA//9jdBLXngYAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

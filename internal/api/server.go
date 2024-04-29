@@ -4,18 +4,17 @@ package api
 
 import "context"
 
-type Server struct{}
+type Server struct {
+	*FilesService
+}
 
 var _ StrictServerInterface = (*Server)(nil)
 
-func NewServer() *Server {
-	return &Server{}
-}
-
-// List files
-// (GET /files)
-func (s *Server) GetFiles(ctx context.Context, request GetFilesRequestObject) (GetFilesResponseObject, error) {
-	return nil, nil
+func NewServer(prefix string) *Server {
+	filesService := NewFilesService(prefix)
+	return &Server{
+		FilesService: filesService,
+	}
 }
 
 // Ping server
