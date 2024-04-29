@@ -36,13 +36,13 @@ type GetFilesJSONBody struct {
 	Path string `json:"path"`
 }
 
-// DeleteFilesJSONRequestBody defines body for DeleteFiles for application/json ContentType.
+// DeleteFilesJSONRequestBody defines requestBody for DeleteFiles for application/json ContentType.
 type DeleteFilesJSONRequestBody DeleteFilesJSONBody
 
-// GetFilesJSONRequestBody defines body for GetFiles for application/json ContentType.
+// GetFilesJSONRequestBody defines requestBody for GetFiles for application/json ContentType.
 type GetFilesJSONRequestBody GetFilesJSONBody
 
-// PostFilesJSONRequestBody defines body for PostFiles for application/json ContentType.
+// PostFilesJSONRequestBody defines requestBody for PostFiles for application/json ContentType.
 type PostFilesJSONRequestBody = File
 
 // ServerInterface represents all server handlers.
@@ -595,7 +595,7 @@ func (sh *strictHandler) DeleteFiles(w http.ResponseWriter, r *http.Request) {
 
 	var body DeleteFilesJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON requestBody: %w", err))
 		return
 	}
 	request.Body = &body
@@ -626,7 +626,7 @@ func (sh *strictHandler) GetFiles(w http.ResponseWriter, r *http.Request) {
 
 	var body GetFilesJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON requestBody: %w", err))
 		return
 	}
 	request.Body = &body
@@ -657,7 +657,7 @@ func (sh *strictHandler) PostFiles(w http.ResponseWriter, r *http.Request) {
 
 	var body PostFilesJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON requestBody: %w", err))
 		return
 	}
 	request.Body = &body
