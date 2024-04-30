@@ -1,6 +1,7 @@
 "use client";
 
 import { GetColumnDef, Job, JobTable } from "./job-table.tsx";
+import { FileBrowser } from "@/project/[projectId]/file-tree.tsx";
 
 const jobs: Job[] = [
   {
@@ -61,6 +62,9 @@ export function ProjectPage({ params }: { params: { projectId: string } }) {
       </h1>
       <div className="mt-4">
         <JobTable columns={GetColumnDef(jobs)} data={jobs} />
+      </div>
+      <div className="mt-6">
+        <FileBrowser></FileBrowser>
       </div>
     </div>
   );
