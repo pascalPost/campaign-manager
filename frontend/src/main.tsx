@@ -10,6 +10,7 @@ import { Layout } from "@/components/layout";
 import { SettingsPage } from "@/settings/page.tsx";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { SchedulerPage } from "@/scheduler/page.tsx";
+import { EditorPage } from "@/editor/page.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/project/create" component={CreateProjectPage} />
             <Route path="/project/:projectId" component={ProjectPage} />
             <Route path="/scheduler" component={SchedulerPage} />
+            <Route path="/editor" component={EditorPage} />
 
             {/*/!* Default route in a switch *!/*/}
             <Route>404: No such page!</Route>

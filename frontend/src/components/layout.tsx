@@ -9,11 +9,11 @@ export const Layout = ({ children }: { children: ReactNode }) => {
     <div className="flex h-screen flex-1 flex-col">
       <Header />
       <div className="flex h-full flex-row">
-        <aside className="hidden h-full min-w-64 border-r px-6 py-6 lg:flex">
+        <aside className="hidden h-full min-w-64 border-r px-4 py-4 lg:flex">
           <Sidebar />
         </aside>
-        <div className="w-full px-6 py-6">
-          <main className="flex w-full flex-col">{children}</main>
+        <div className="w-full px-4 py-4">
+          <main className="flex h-full w-full flex-col">{children}</main>
         </div>
       </div>
       <Toaster richColors />
