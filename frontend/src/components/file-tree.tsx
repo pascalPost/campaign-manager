@@ -66,7 +66,10 @@ function FileTreeFile({
   return (
     <li className="flex flex-row">
       <div className="w-5" />
-      <div onClick={() => selectedFileProps.handleChangeSelectedFile(file.id)}>
+      <div
+        onClick={() => selectedFileProps.handleChangeSelectedFile(file.id)}
+        className="hover:cursor-pointer"
+      >
         {file.name}
       </div>
     </li>
@@ -89,7 +92,7 @@ function FileTreeFolder({
       <>
         <li className="flex flex-row items-center">
           <ChevronRight
-            className="mt-1 h-4 w-5"
+            className="mt-1 h-4 w-5 hover:cursor-pointer"
             onClick={() => setExpanded(true)}
           />
           <div>{name}</div>
@@ -102,7 +105,7 @@ function FileTreeFolder({
     <>
       <li className="flex flex-row items-center">
         <ChevronDown
-          className="mt-1 h-4 w-5"
+          className="mt-1 h-4 w-5 hover:cursor-pointer"
           onClick={() => setExpanded(false)}
         />
         {name}
