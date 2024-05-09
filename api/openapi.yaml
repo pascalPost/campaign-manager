@@ -1,8 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/schemas/v3.0/schema.json
+
 openapi: 3.0.3
 info:
   title: Campaign Manager
   description: Campaign Manager Rest API.
   version: 0.1.0
+
+#servers:
+#  - url: http://localhost:3000
+#    description: Local Dev server
 
 paths:
   /ping:
@@ -15,20 +21,17 @@ paths:
     get:
       summary: List tasks
       responses:
-        {}
+        { }
     post:
       summary: Add new task
-      responses:
-        {}
+      responses: { }
   /projects:
     get:
       summary: List projects
-      responses:
-        {}
+      responses: { }
     post:
       summary: Add new projects
-      responses:
-        {}
+      responses: { }
   /files:
     get:
       summary: List files including folders
@@ -50,14 +53,14 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/File'
+                  $ref: "#/components/schemas/File"
     post:
       summary: Add new file or folder
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/File'
+              $ref: "#/components/schemas/File"
       responses:
         204:
           description: Success with no content
@@ -80,8 +83,49 @@ paths:
           description: Non-existing path
     put:
       summary: Update files
+      responses: { }
+  /file/{filePath}:
+    get:
+      summary: Download plain/text file
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "/path/to/file"
       responses:
-        {}
+        200:
+          description: Success
+          content:
+            plain/text:
+              schema:
+                type: string
+        400:
+          description: No plain/text file requested
+        404:
+          description: Non-existing path
+    put:
+      summary: Update file
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "/path/to/file"
+      requestBody:
+        content:
+          plain/text:
+            schema:
+              type: string
+      responses:
+        200:
+          description: Success
+        400:
+          description: No plain/text file requested
+        404:
+          description: Non-existing path
 
 components:
   schemas:

@@ -1,9 +1,15 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"log/slog"
+	"net/http"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 )
 
 type FilesService struct {
@@ -83,4 +89,85 @@ func (s *FilesService) DeleteFiles(ctx context.Context, request DeleteFilesReque
 func (s *FilesService) PutFiles(ctx context.Context, request PutFilesRequestObject) (PutFilesResponseObject, error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error) {
+	filePath := filepath.Join(s.Prefix, request.FilePath)
+
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			slog.Error("GetFile", "filePath", filePath, "Path not exists response", http.StatusNotFound)
+			return GetFileFilePath404Response{}, nil
+		}
+
+		slog.Error("GetFile", "filePath", filePath, "err", err)
+		return nil, err
+	}
+
+	if fileInfo.IsDir() {
+		slog.Error("GetFile", "filePath", filePath, "isDir response", http.StatusBadRequest)
+		return GetFileFilePath400Response{}, nil
+	}
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	fileType := http.DetectContentType(content)
+	if !strings.HasPrefix(fileType, "text/plain") {
+		slog.Error("GetFile", "filePath", filePath, "file type", fileType, "non plain/text file response", http.StatusBadRequest)
+		return GetFileFilePath400Response{}, nil
+	}
+
+	slog.Debug("GetFile", "filePath", filePath, "response", http.StatusOK)
+	return GetFileFilePath200PlaintextResponse{
+		Body: bytes.NewReader(content),
+	}, nil
+}
+
+func (s *FilesService) PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error) {
+	filePath := filepath.Join(s.Prefix, request.FilePath)
+
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			slog.Error("GetFile", "filePath", filePath, "Path not exists response", http.StatusNotFound)
+			return PutFileFilePath404Response{}, nil
+		}
+
+		slog.Error("PutFile", "filePath", filePath, "err", err)
+		return nil, err
+	}
+
+	if fileInfo.IsDir() {
+		slog.Error("PutFile", "filePath", filePath, "isDir response", http.StatusBadRequest)
+		return PutFileFilePath400Response{}, nil
+	}
+
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		slog.Error("PutFile", "filePath", filePath, "ReadAll body err", err)
+		return nil, err
+	}
+
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_TRUNC, 0o644)
+	if err != nil {
+		slog.Error("PutFile", "filePath", filePath, "OpenFile err", err)
+		return nil, err
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			slog.Error("PutFile", "filePath", filePath, "Close file err", err)
+		}
+	}()
+
+	_, err = f.Write(body)
+	if err != nil {
+		slog.Error("PutFile", "filePath", filePath, "Write file err", err)
+		return nil, err
+	}
+
+	return PutFileFilePath200Response{}, nil
 }

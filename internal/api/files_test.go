@@ -3,12 +3,15 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetFiles(t *testing.T) {
@@ -191,3 +194,55 @@ func TestDeleteFiles(t *testing.T) {
 		test.postTestCheck(prefix, t)
 	}
 }
+
+func TestGetFile(t *testing.T) {
+	// create a temporary directory to use as the prefix
+	prefix := t.TempDir()
+
+	// create a new file in the prefix
+	err := os.WriteFile(path.Join(prefix, "test.txt"), []byte("test"), 0o644)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequest("GET", "/file/test.txt", nil)
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+	server := NewServer(prefix)
+
+	handler := Handler(NewStrictHandler(server, nil))
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "plain/text", rr.Header().Get("content-type"))
+
+	body, err := io.ReadAll(rr.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "test", string(body))
+}
+
+func TestPutFile(t *testing.T) {
+	// create a temporary directory to use as the prefix
+	prefix := t.TempDir()
+
+	// create a new file in the prefix
+	fileName := path.Join(prefix, "test.txt")
+	err := os.WriteFile(fileName, []byte(""), 0o644)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequest("PUT", "/file/test.txt", strings.NewReader("test"))
+	assert.NoError(t, err)
+
+	rr := httptest.NewRecorder()
+	server := NewServer(prefix)
+
+	handler := Handler(NewStrictHandler(server, nil))
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	c, err := os.ReadFile(fileName)
+	assert.NoError(t, err)
+	assert.Equal(t, "test", string(c))
+}
+
+// TODO update testing structure to represent https://github.com/deepmap/oapi-codegen/blob/master/examples/petstore-expanded/strict/petstore_test.go

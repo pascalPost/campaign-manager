@@ -6,6 +6,7 @@ import (
 	"github.com/campaign-manager/internal/api"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"net/http"
 	"os"
 )
@@ -19,12 +20,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	//server := api.NewServer()
-	//handler := api.NewStrictHandler(server, nil)
-
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(cors.Handler(cors.Options{
+
+		// TODO set this based on env variable
+		AllowedOrigins: []string{"http://localhost:5173"},
+
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+
 	//r.Use(nethttpmiddleware.OapiRequestValidator(swagger))
+
+	// TODO read this from config
+	strictServer := api.NewServer("./work")
+
+	server := api.NewStrictHandler(strictServer, nil)
+
+	handler := api.Handler(server)
+
+	r.Mount("/", handler)
 
 	//r.Get("/api/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
 	//	w.Header().Set("Content-Type", "application/yaml")

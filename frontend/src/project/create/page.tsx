@@ -75,7 +75,7 @@ export function CreateProjectPage() {
           <FormField
             control={form.control}
             name="csvFilePath"
-            render={({ field: { onChange, ...fieldProps } }) => (
+            render={({ field: { ...fieldProps } }) => (
               <FormItem>
                 <FormLabel>CSV File</FormLabel>
                 <FormControl>
@@ -83,9 +83,9 @@ export function CreateProjectPage() {
                     {...fieldProps}
                     type="file"
                     accept=".csv"
-                    onChange={(event) => {
-                      onChange(event.target.files[0].name);
-                    }}
+                    // onChange={(event) => {
+                    //   onChange(event.target.files[0].name);
+                    // }}
                   />
                 </FormControl>
                 <FormDescription>
