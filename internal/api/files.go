@@ -22,10 +22,10 @@ func NewFilesService(prefix string) *FilesService {
 	}
 }
 
-func (s *FilesService) GetFiles(ctx context.Context, request GetFilesRequestObject) (GetFilesResponseObject, error) {
-	p := path.Join(s.Prefix, request.Body.Path)
+func getFileTree(prefix string, filePath string) ([]File, error) {
+	rootPath := filepath.Join(prefix, filePath)
 
-	files, err := os.ReadDir(p)
+	files, err := os.ReadDir(rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,24 @@ func (s *FilesService) GetFiles(ctx context.Context, request GetFilesRequestObje
 			IsDir: f.IsDir(),
 		})
 	}
+	return result, nil
+}
 
-	return GetFiles200JSONResponse(result), nil
+func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeRequestObject) (GetFileTreeResponseObject, error) {
+	result, err := getFileTree(s.Prefix, "/")
+	if err != nil {
+		return nil, err
+	}
+
+	return GetFileTree200JSONResponse(result), nil
+}
+
+func (s *FilesService) GetFileTreeFilePath(ctx context.Context, request GetFileTreeFilePathRequestObject) (GetFileTreeFilePathResponseObject, error) {
+	result, err := getFileTree(s.Prefix, request.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	return GetFileTreeFilePath200JSONResponse(result), nil
 }
 
 func (s *FilesService) PostFiles(ctx context.Context, request PostFilesRequestObject) (PostFilesResponseObject, error) {

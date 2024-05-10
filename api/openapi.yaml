@@ -32,19 +32,9 @@ paths:
     post:
       summary: Add new projects
       responses: { }
-  /files:
+  /fileTree:
     get:
       summary: List files including folders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - path
-              properties:
-                path:
-                  type: string
       responses:
         200:
           description: Success
@@ -54,6 +44,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/File"
+  /fileTree/{filePath}:
+    get:
+      summary: List files including folders
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "/path/to/file"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/File"
+  /files:
     post:
       summary: Add new file or folder
       requestBody:

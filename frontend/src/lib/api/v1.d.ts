@@ -40,14 +40,25 @@ export interface paths {
       };
     };
   };
-  "/files": {
+  "/fileTree": {
     /** List files including folders */
     get: {
-      requestBody?: {
-        content: {
-          "application/json": {
-            path: string;
+      responses: {
+        /** @description Success */
+        200: {
+          content: {
+            "application/json": components["schemas"]["File"][];
           };
+        };
+      };
+    };
+  };
+  "/fileTree/{filePath}": {
+    /** List files including folders */
+    get: {
+      parameters: {
+        path: {
+          filePath: string;
         };
       };
       responses: {
@@ -59,6 +70,8 @@ export interface paths {
         };
       };
     };
+  };
+  "/files": {
     /** Update files */
     put: {
       responses: {

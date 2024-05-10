@@ -26,19 +26,13 @@ func TestGetFiles(t *testing.T) {
 	err = os.MkdirAll(path.Join(prefix, "dir"), 0o777)
 	assert.NoError(t, err)
 
-	reqBody := GetFilesJSONBody{
-		Path: string("/"),
-	}
-	reqBodyJSON, err := json.Marshal(reqBody)
-	assert.NoError(t, err)
-
-	req, err := http.NewRequest("GET", "/files", bytes.NewReader(reqBodyJSON))
+	req, err := http.NewRequest("GET", "/fileTree/", nil)
 	assert.NoError(t, err)
 
 	rr := httptest.NewRecorder()
 	server := NewServer(prefix)
 
-	handler := http.HandlerFunc(NewStrictHandler(server, nil).GetFiles)
+	handler := Handler(NewStrictHandler(server, nil))
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
