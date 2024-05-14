@@ -1,42 +1,43 @@
 import { ReactElement, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useQuery } from "react-query";
+import { client } from "@/lib/api/client.ts";
 
 type File = {
-  id: string;
   type: "file";
-  name: string;
+  path: string;
 };
 
 type Folder = {
-  id: string;
   type: "folder";
-  name: string;
-  content: Array<File | Folder>;
+  path: string;
+  content?: Array<File | Folder>;
 };
 
 type FileTreeRoot = {
-  id: string;
-  name: string;
-  content: Array<File | Folder>;
+  path: string;
+  content?: Array<File | Folder>;
 };
 
 type SelectedFileProps = {
-  selectedFile: string;
+  selectedFile?: string;
   handleChangeSelectedFile: (fileId: string) => void;
 };
 
 function FileTreeEntries(
-  content: Array<File | Folder>,
+  isExpandedMap: Map<string, boolean>,
+  setExpandedMap: (path: string, newState: boolean) => void,
   selectedFileProps: SelectedFileProps,
+  content?: Array<File | Folder>,
 ): ReactElement {
   return (
     <ul className="px-4">
-      {content.map((e: File | Folder) => {
+      {(content || []).map((e: File | Folder) => {
         switch (e.type) {
           case "file":
             return (
               <FileTreeFile
-                key={e.id}
+                key={e.path}
                 file={e}
                 selectedFileProps={selectedFileProps}
               />
@@ -44,10 +45,12 @@ function FileTreeEntries(
           case "folder":
             return (
               <FileTreeFolder
-                key={e.id}
-                name={e.name}
+                key={e.path}
+                path={e.path}
                 content={e.content}
                 selectedFileProps={selectedFileProps}
+                isExpandedMap={isExpandedMap}
+                setExpandedMap={setExpandedMap}
               />
             );
         }
@@ -63,29 +66,53 @@ function FileTreeFile({
   file: File;
   selectedFileProps: SelectedFileProps;
 }): ReactElement {
+  const fileName = file.path.split("/").pop() || file.path;
+
   return (
     <li className="flex flex-row">
       <div className="w-5" />
       <div
-        onClick={() => selectedFileProps.handleChangeSelectedFile(file.id)}
+        onClick={() => selectedFileProps.handleChangeSelectedFile(file.path)}
         className="hover:cursor-pointer"
       >
-        {file.name}
+        {fileName}
       </div>
     </li>
   );
 }
 
+// async function getFileTree(path: string, signal?: AbortSignal) {
+//   const {data, error} = await client.GET(`/fileTree/{filePath}`, {
+//     params: {
+//       path: {
+//         filePath: path,
+//       },
+//     },
+//     signal,
+//   });
+//
+//   if(error) throw error;
+//
+//   if(data) {
+//
+//   }
+// }
+
 function FileTreeFolder({
-  name,
+  path,
   content,
+  isExpandedMap,
+  setExpandedMap,
   selectedFileProps,
 }: {
-  name: string;
-  content: Array<File | Folder>;
+  path: string;
+  content?: Array<File | Folder>;
+  isExpandedMap: Map<string, boolean>;
+  setExpandedMap: (path: string, state: boolean) => void;
   selectedFileProps: SelectedFileProps;
 }): ReactElement {
-  const [isExpanded, setExpanded] = useState<boolean>(false);
+  const folderName = path.split("/").pop() || path;
+  const isExpanded = isExpandedMap.get(path) || false;
 
   if (!isExpanded) {
     return (
@@ -93,24 +120,37 @@ function FileTreeFolder({
         <li className="flex flex-row items-center">
           <ChevronRight
             className="mt-1 h-4 w-5 hover:cursor-pointer"
-            onClick={() => setExpanded(true)}
+            onClick={() => setExpandedMap(path, true)}
           />
-          <div>{name}</div>
+          <div>{folderName}</div>
         </li>
       </>
     );
   }
+
+  // if (content === undefined) {
+  //   const query = useQuery({
+  //     queryKey: [`getFileTree_${path}`],
+  //     queryFn: getFileTree(path),
+  //   });
+  //   console.log(`request file tree for root ${path}`);
+  // }
 
   return (
     <>
       <li className="flex flex-row items-center">
         <ChevronDown
           className="mt-1 h-4 w-5 hover:cursor-pointer"
-          onClick={() => setExpanded(false)}
+          onClick={() => setExpandedMap(path, false)}
         />
-        {name}
+        {folderName}
       </li>
-      {FileTreeEntries(content, selectedFileProps)}
+      {FileTreeEntries(
+        isExpandedMap,
+        setExpandedMap,
+        selectedFileProps,
+        content,
+      )}
     </>
   );
 }
@@ -122,13 +162,23 @@ function FileTree({
   data: FileTreeRoot;
   selectedFileProps: SelectedFileProps;
 }) {
+  const [isExpandedMap, setExpandedMap] = useState<Map<string, boolean>>(
+    new Map(),
+  );
+
   return (
     <>
       <ul className="px-1">
         <FileTreeFolder
-          key={data.id}
-          name={data.name}
+          key={data.path}
+          path={data.path}
           content={data.content}
+          isExpandedMap={isExpandedMap}
+          setExpandedMap={(path: string, newState: boolean) => {
+            setExpandedMap(
+              new Map<string, boolean>(isExpandedMap.set(path, newState)),
+            );
+          }}
           selectedFileProps={selectedFileProps}
         />
       </ul>

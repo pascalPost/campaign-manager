@@ -3,7 +3,12 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { FileTree, FileTreeRoot } from "@/components/file-tree.tsx";
+import {
+  File,
+  FileTree,
+  FileTreeRoot,
+  Folder,
+} from "@/components/file-tree.tsx";
 import { useEffect, useState } from "react";
 import { Editor } from "@/components/editor.tsx";
 import { useQuery } from "react-query";
@@ -11,9 +16,8 @@ import { client } from "@/lib/api/client.ts"; // const data: FileTreeRoot = {
 
 async function getFileTree(signal?: AbortSignal) {
   const fileTree: FileTreeRoot = {
-    id: "/",
-    name: "/",
-    content: [],
+    path: "/",
+    content: new Array<File | Folder>(),
   };
 
   const { data, error } = await client.GET("/fileTree", {
@@ -21,20 +25,18 @@ async function getFileTree(signal?: AbortSignal) {
   });
 
   if (error) throw error;
+
   if (data) {
     data.map((entry) => {
       if (entry.isDir) {
-        fileTree.content.push({
-          id: `/${entry.name}`,
+        fileTree.content!.push({
           type: "folder",
-          name: entry.name,
-          content: [],
+          path: `/${entry.name}`,
         });
       } else {
-        fileTree.content.push({
-          id: `/${entry.name}`,
+        fileTree.content!.push({
           type: "file",
-          name: entry.name,
+          path: `/${entry.name}`,
         });
       }
     });
@@ -45,11 +47,11 @@ async function getFileTree(signal?: AbortSignal) {
 
 export function EditorPage() {
   const [fileTree, setFileTree] = useState<FileTreeRoot>({
-    id: "/",
-    name: "/",
-    content: [],
+    path: "/",
   });
-  const [selectedFile, setSelectedFile] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<string | undefined>(
+    undefined,
+  );
 
   const query = useQuery({
     queryKey: ["getFileTree"],
