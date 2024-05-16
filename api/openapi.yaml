@@ -32,9 +32,10 @@ paths:
     post:
       summary: Add new projects
       responses: { }
+
   /fileTree:
     get:
-      summary: List files including folders
+      summary: List files and folders in root (/)
       responses:
         200:
           description: Success
@@ -43,57 +44,55 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/File"
-  /fileTree/{filePath}:
-    get:
-      summary: List files including folders
-      parameters:
-        - name: filePath
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "/path/to/file"
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/File"
-  /files:
+                  $ref: "#/components/schemas/FileTreeEntry"
     post:
       summary: Add new file or folder
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/File"
+              $ref: "#/components/schemas/FileTreeEntry"
       responses:
         204:
           description: Success with no content
+
+  /fileTree/{path}:
+    get:
+      summary: List files and folders in the given path
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "/path/to/file (url encoding needed!)"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileTreeEntry"
     delete:
       summary: Delete files or folders
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - path
-              properties:
-                path:
-                  type: string
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "/path/to/file (url encoding needed!)"
       responses:
         204:
           description: Success with no content
         404:
           description: Non-existing path
-    put:
-      summary: Update files
-      responses: { }
+#    put:
+#      summary: Update files
+#      responses: { }
+
   /file/{filePath}:
     get:
       summary: Download plain/text file
@@ -103,7 +102,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/path/to/file"
+            example: "/path/to/file (url encoding needed!)"
       responses:
         200:
           description: Success
@@ -123,7 +122,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/path/to/file"
+            example: "/path/to/file (url encoding needed!)"
       requestBody:
         content:
           plain/text:
@@ -139,7 +138,7 @@ paths:
 
 components:
   schemas:
-    File:
+    FileTreeEntry:
       required:
         - name
         - isDir

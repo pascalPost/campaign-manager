@@ -22,7 +22,7 @@ func NewFilesService(prefix string) *FilesService {
 	}
 }
 
-func getFileTree(prefix string, filePath string) ([]File, error) {
+func getFileTree(prefix string, filePath string) ([]FileTreeEntry, error) {
 	rootPath := filepath.Join(prefix, filePath)
 
 	files, err := os.ReadDir(rootPath)
@@ -30,9 +30,9 @@ func getFileTree(prefix string, filePath string) ([]File, error) {
 		return nil, err
 	}
 
-	result := make([]File, 0, len(files))
+	result := make([]FileTreeEntry, 0, len(files))
 	for _, f := range files {
-		result = append(result, File{
+		result = append(result, FileTreeEntry{
 			Name:  f.Name(),
 			IsDir: f.IsDir(),
 		})
@@ -49,15 +49,15 @@ func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeReque
 	return GetFileTree200JSONResponse(result), nil
 }
 
-func (s *FilesService) GetFileTreeFilePath(ctx context.Context, request GetFileTreeFilePathRequestObject) (GetFileTreeFilePathResponseObject, error) {
-	result, err := getFileTree(s.Prefix, request.FilePath)
+func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error) {
+	result, err := getFileTree(s.Prefix, request.Path)
 	if err != nil {
 		return nil, err
 	}
-	return GetFileTreeFilePath200JSONResponse(result), nil
+	return GetFileTreePath200JSONResponse(result), nil
 }
 
-func (s *FilesService) PostFiles(ctx context.Context, request PostFilesRequestObject) (PostFilesResponseObject, error) {
+func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
 	name := path.Join(s.Prefix, request.Body.Name)
 	isDir := request.Body.IsDir
 
@@ -79,33 +79,34 @@ func (s *FilesService) PostFiles(ctx context.Context, request PostFilesRequestOb
 		}
 	}
 
-	return PostFiles204Response{}, nil
+	return PostFileTree204Response{}, nil
 }
 
-func (s *FilesService) DeleteFiles(ctx context.Context, request DeleteFilesRequestObject) (DeleteFilesResponseObject, error) {
-	p := path.Join(s.Prefix, request.Body.Path)
-
-	_, err := os.Stat(p)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return DeleteFiles404Response{}, nil
-		}
-
-		return nil, err
-	}
-
-	err = os.RemoveAll(p)
-	if err != nil {
-		return nil, err
-	}
-
-	return DeleteFiles204Response{}, nil
-}
-
-func (s *FilesService) PutFiles(ctx context.Context, request PutFilesRequestObject) (PutFilesResponseObject, error) {
-	//TODO implement me
+func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
+	//p := path.Join(s.Prefix, request.Body.Path)
+	//
+	//_, err := os.Stat(p)
+	//if err != nil {
+	//	if os.IsNotExist(err) {
+	//		return DeleteFiles404Response{}, nil
+	//	}
+	//
+	//	return nil, err
+	//}
+	//
+	//err = os.RemoveAll(p)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return DeleteFiles204Response{}, nil
 	panic("implement me")
 }
+
+//func (s *FilesService) PutFiles(ctx context.Context, request PutFileTreeRequestObject) (PutFilesResponseObject, error) {
+//	//TODO implement me
+//	panic("implement me")
+//}
 
 func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error) {
 	filePath := filepath.Join(s.Prefix, request.FilePath)

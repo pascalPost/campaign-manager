@@ -11,7 +11,7 @@ async function getFile(
   const { data } = await client.GET("/file/{filePath}", {
     params: {
       path: {
-        filePath: filePath.replace(/^\/+/g, ""), // remove leading /
+        filePath: encodeURIComponent(filePath),
       },
     },
     parseAs: "text",
@@ -20,11 +20,11 @@ async function getFile(
   return data;
 }
 
-async function putFile(text: string): Promise<void> {
+async function putFile(filePath: string, text: string): Promise<void> {
   await client.PUT("/file/{filePath}", {
     params: {
       path: {
-        filePath: "test.txt",
+        filePath: encodeURIComponent(filePath),
       },
     },
     body: text,
@@ -40,7 +40,7 @@ function Editor({ filePath }: { filePath: string | undefined }) {
   const [editorText, setEditorText] = useState<string | undefined>(undefined);
 
   const query = useQuery({
-    queryKey: [`getFile${filePath}`],
+    queryKey: ["getFile", filePath],
     queryFn: ({ signal }) => getFile(filePath!, signal),
     enabled: ((): boolean => !(filePath === undefined))(),
   });
@@ -53,9 +53,9 @@ function Editor({ filePath }: { filePath: string | undefined }) {
 
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (fileContent: string) => putFile(fileContent),
+    mutationFn: (fileContent: string) => putFile(filePath!, fileContent),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: [`getFile${filePath}`] }),
+      queryClient.invalidateQueries({ queryKey: ["getFile", "filePath"] }),
   });
 
   if (filePath === undefined) {

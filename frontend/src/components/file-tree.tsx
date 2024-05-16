@@ -1,4 +1,4 @@
-import { ReactElement, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useQuery } from "react-query";
 import { client } from "@/lib/api/client.ts";
@@ -11,53 +11,14 @@ type File = {
 type Folder = {
   type: "folder";
   path: string;
-  content?: Array<File | Folder>;
-};
-
-type FileTreeRoot = {
-  path: string;
-  content?: Array<File | Folder>;
+  childPaths?: string[];
+  isFolded: boolean;
 };
 
 type SelectedFileProps = {
   selectedFile?: string;
   handleChangeSelectedFile: (fileId: string) => void;
 };
-
-function FileTreeEntries(
-  isExpandedMap: Map<string, boolean>,
-  setExpandedMap: (path: string, newState: boolean) => void,
-  selectedFileProps: SelectedFileProps,
-  content?: Array<File | Folder>,
-): ReactElement {
-  return (
-    <ul className="px-4">
-      {(content || []).map((e: File | Folder) => {
-        switch (e.type) {
-          case "file":
-            return (
-              <FileTreeFile
-                key={e.path}
-                file={e}
-                selectedFileProps={selectedFileProps}
-              />
-            );
-          case "folder":
-            return (
-              <FileTreeFolder
-                key={e.path}
-                path={e.path}
-                content={e.content}
-                selectedFileProps={selectedFileProps}
-                isExpandedMap={isExpandedMap}
-                setExpandedMap={setExpandedMap}
-              />
-            );
-        }
-      })}
-    </ul>
-  );
-}
 
 function FileTreeFile({
   file,
@@ -81,46 +42,88 @@ function FileTreeFile({
   );
 }
 
-// async function getFileTree(path: string, signal?: AbortSignal) {
-//   const {data, error} = await client.GET(`/fileTree/{filePath}`, {
-//     params: {
-//       path: {
-//         filePath: path,
-//       },
-//     },
-//     signal,
-//   });
-//
-//   if(error) throw error;
-//
-//   if(data) {
-//
-//   }
-// }
+async function callGetFileTree(path: string, signal?: AbortSignal) {
+  if (path === "/") {
+    return client.GET("/fileTree", {
+      signal,
+    });
+  } else {
+    const pathWithoutLeadingSlash = path.replace(/^\/+/, "");
+    return client.GET("/fileTree/{path}", {
+      params: {
+        path: {
+          path: pathWithoutLeadingSlash,
+        },
+      },
+      signal,
+    });
+  }
+}
+
+async function getFileTree(path: string, signal?: AbortSignal) {
+  const { data, error } = await callGetFileTree(path, signal);
+
+  if (error) throw error;
+
+  if (!data) {
+    return [];
+  }
+
+  return data.map((entry): File | Folder => {
+    if (entry.isDir) {
+      return {
+        type: "folder",
+        path: entry.name,
+        isFolded: true,
+      };
+    } else {
+      return {
+        type: "file",
+        path: entry.name,
+      };
+    }
+  });
+}
 
 function FileTreeFolder({
   path,
-  content,
-  isExpandedMap,
-  setExpandedMap,
+  tree,
+  onChangeFold,
+  onUpdateFolder,
   selectedFileProps,
 }: {
   path: string;
-  content?: Array<File | Folder>;
-  isExpandedMap: Map<string, boolean>;
-  setExpandedMap: (path: string, state: boolean) => void;
+  tree: Map<string, Folder | File>;
+  onChangeFold: (path: string, state: boolean) => void;
+  onUpdateFolder: (path: string, data: (File | Folder)[]) => void;
   selectedFileProps: SelectedFileProps;
-}): ReactElement {
-  const folderName = path.split("/").pop() || path;
-  const isExpanded = isExpandedMap.get(path) || false;
+}) {
+  const folder = tree.get(path) as Folder;
+  const isFolded = folder.isFolded;
 
-  if (!isExpanded) {
+  const query = useQuery({
+    queryKey: ["getFileTree", folder.path],
+    queryFn: ({ signal }) => getFileTree(folder.path, signal),
+    enabled: !isFolded && folder.childPaths == undefined,
+    staleTime: Infinity,
+    cacheTime: Infinity,
+  });
+
+  useEffect(() => {
+    if (query.data) {
+      onUpdateFolder(path, query.data);
+    }
+  }, [query.data]);
+
+  const folderName = folder.path.split("/").pop() || folder.path;
+
+  if (isFolded) {
     return (
       <>
         <li className="flex flex-row items-center">
           <ChevronRight
             className="mt-1 h-4 w-5 hover:cursor-pointer"
-            onClick={() => setExpandedMap(path, true)}
+            onClick={() => onChangeFold(path, false)}
           />
           <div>{folderName}</div>
         </li>
@@ -128,57 +131,101 @@ function FileTreeFolder({
     );
   }
 
-  // if (content === undefined) {
-  //   const query = useQuery({
-  //     queryKey: [`getFileTree_${path}`],
-  //     queryFn: getFileTree(path),
-  //   });
-  //   console.log(`request file tree for root ${path}`);
-  // }
+  if (query.isLoading) {
+    return "Loading...";
+  }
 
-  return (
-    <>
-      <li className="flex flex-row items-center">
-        <ChevronDown
-          className="mt-1 h-4 w-5 hover:cursor-pointer"
-          onClick={() => setExpandedMap(path, false)}
-        />
-        {folderName}
-      </li>
-      {FileTreeEntries(
-        isExpandedMap,
-        setExpandedMap,
-        selectedFileProps,
-        content,
-      )}
-    </>
-  );
+  if (query.isError) {
+    return "Error.";
+  }
+
+  if (query.isSuccess) {
+    const folder = tree.get(path) as Folder;
+
+    return (
+      <>
+        <li className="flex flex-row items-center">
+          <ChevronDown
+            className="mt-1 h-4 w-5 hover:cursor-pointer"
+            onClick={() => onChangeFold(path, true)}
+          />
+          {folderName}
+        </li>
+        <ul className="px-4">
+          {folder.childPaths?.map((entry) => {
+            const res = tree.get(entry);
+            if (!res) return;
+            if (res.type === "file") {
+              return (
+                <FileTreeFile
+                  key={entry}
+                  file={res}
+                  selectedFileProps={selectedFileProps}
+                />
+              );
+            }
+            if (res.type === "folder") {
+              return (
+                <FileTreeFolder
+                  key={entry}
+                  path={entry}
+                  tree={tree}
+                  onChangeFold={onChangeFold}
+                  onUpdateFolder={onUpdateFolder}
+                  selectedFileProps={selectedFileProps}
+                />
+              );
+            }
+          })}
+        </ul>
+      </>
+    );
+  }
 }
 
 function FileTree({
-  data,
   selectedFileProps,
 }: {
-  data: FileTreeRoot;
   selectedFileProps: SelectedFileProps;
 }) {
-  const [isExpandedMap, setExpandedMap] = useState<Map<string, boolean>>(
-    new Map(),
+  const [tree, setTree] = useState(
+    new Map<string, Folder | File>([
+      [
+        "/",
+        { type: "folder", path: "/", childPaths: undefined, isFolded: true },
+      ],
+    ]),
   );
+
+  function handleChangeFold(path: string, state: boolean) {
+    const folder = tree.get(path) as Folder;
+    folder.isFolded = state;
+    setTree(new Map(tree.set(path, folder)));
+  }
+
+  function handleUpdateFolder(path: string, data: (File | Folder)[]) {
+    const root = path === "/" ? path : path + "/";
+    const folder = tree.get(path) as Folder;
+
+    data.forEach((e) => {
+      e.path = root + e.path;
+      tree.set(e.path, e);
+    });
+
+    folder.childPaths = data.map((e) => e.path);
+
+    setTree(new Map(tree));
+  }
 
   return (
     <>
       <ul className="px-1">
         <FileTreeFolder
-          key={data.path}
-          path={data.path}
-          content={data.content}
-          isExpandedMap={isExpandedMap}
-          setExpandedMap={(path: string, newState: boolean) => {
-            setExpandedMap(
-              new Map<string, boolean>(isExpandedMap.set(path, newState)),
-            );
-          }}
+          key={"/"}
+          path={"/"}
+          tree={tree}
+          onChangeFold={handleChangeFold}
+          onUpdateFolder={handleUpdateFolder}
           selectedFileProps={selectedFileProps}
         />
       </ul>
@@ -186,4 +233,4 @@ function FileTree({
   );
 }
 
-export { FileTree, type FileTreeRoot, type Folder, type File };
+export { FileTree };

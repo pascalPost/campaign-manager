@@ -22,22 +22,14 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
-// File defines model for File.
-type File struct {
+// FileTreeEntry defines model for FileTreeEntry.
+type FileTreeEntry struct {
 	IsDir bool   `json:"isDir"`
 	Name  string `json:"name"`
 }
 
-// DeleteFilesJSONBody defines parameters for DeleteFiles.
-type DeleteFilesJSONBody struct {
-	Path string `json:"path"`
-}
-
-// DeleteFilesJSONRequestBody defines body for DeleteFiles for application/json ContentType.
-type DeleteFilesJSONRequestBody DeleteFilesJSONBody
-
-// PostFilesJSONRequestBody defines body for PostFiles for application/json ContentType.
-type PostFilesJSONRequestBody = File
+// PostFileTreeJSONRequestBody defines body for PostFileTree for application/json ContentType.
+type PostFileTreeJSONRequestBody = FileTreeEntry
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -47,21 +39,18 @@ type ServerInterface interface {
 	// Update file
 	// (PUT /file/{filePath})
 	PutFileFilePath(w http.ResponseWriter, r *http.Request, filePath string)
-	// List files including folders
+	// List files and folders in root (/)
 	// (GET /fileTree)
 	GetFileTree(w http.ResponseWriter, r *http.Request)
-	// List files including folders
-	// (GET /fileTree/{filePath})
-	GetFileTreeFilePath(w http.ResponseWriter, r *http.Request, filePath string)
-	// Delete files or folders
-	// (DELETE /files)
-	DeleteFiles(w http.ResponseWriter, r *http.Request)
 	// Add new file or folder
-	// (POST /files)
-	PostFiles(w http.ResponseWriter, r *http.Request)
-	// Update files
-	// (PUT /files)
-	PutFiles(w http.ResponseWriter, r *http.Request)
+	// (POST /fileTree)
+	PostFileTree(w http.ResponseWriter, r *http.Request)
+	// Delete files or folders
+	// (DELETE /fileTree/{path})
+	DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string)
+	// List files and folders in the given path
+	// (GET /fileTree/{path})
+	GetFileTreePath(w http.ResponseWriter, r *http.Request, path string)
 	// Ping server
 	// (GET /ping)
 	GetPing(w http.ResponseWriter, r *http.Request)
@@ -95,33 +84,27 @@ func (_ Unimplemented) PutFileFilePath(w http.ResponseWriter, r *http.Request, f
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List files including folders
+// List files and folders in root (/)
 // (GET /fileTree)
 func (_ Unimplemented) GetFileTree(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List files including folders
-// (GET /fileTree/{filePath})
-func (_ Unimplemented) GetFileTreeFilePath(w http.ResponseWriter, r *http.Request, filePath string) {
+// Add new file or folder
+// (POST /fileTree)
+func (_ Unimplemented) PostFileTree(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete files or folders
-// (DELETE /files)
-func (_ Unimplemented) DeleteFiles(w http.ResponseWriter, r *http.Request) {
+// (DELETE /fileTree/{path})
+func (_ Unimplemented) DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Add new file or folder
-// (POST /files)
-func (_ Unimplemented) PostFiles(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Update files
-// (PUT /files)
-func (_ Unimplemented) PutFiles(w http.ResponseWriter, r *http.Request) {
+// List files and folders in the given path
+// (GET /fileTree/{path})
+func (_ Unimplemented) GetFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -231,23 +214,38 @@ func (siw *ServerInterfaceWrapper) GetFileTree(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// GetFileTreeFilePath operation middleware
-func (siw *ServerInterfaceWrapper) GetFileTreeFilePath(w http.ResponseWriter, r *http.Request) {
+// PostFileTree operation middleware
+func (siw *ServerInterfaceWrapper) PostFileTree(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostFileTree(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// DeleteFileTreePath operation middleware
+func (siw *ServerInterfaceWrapper) DeleteFileTreePath(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
 
-	// ------------- Path parameter "filePath" -------------
-	var filePath string
+	// ------------- Path parameter "path" -------------
+	var path string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "filePath", chi.URLParam(r, "filePath"), &filePath, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "path", chi.URLParam(r, "path"), &path, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filePath", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFileTreeFilePath(w, r, filePath)
+		siw.Handler.DeleteFileTreePath(w, r, path)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -257,42 +255,23 @@ func (siw *ServerInterfaceWrapper) GetFileTreeFilePath(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// DeleteFiles operation middleware
-func (siw *ServerInterfaceWrapper) DeleteFiles(w http.ResponseWriter, r *http.Request) {
+// GetFileTreePath operation middleware
+func (siw *ServerInterfaceWrapper) GetFileTreePath(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteFiles(w, r)
-	}))
+	var err error
 
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
+	// ------------- Path parameter "path" -------------
+	var path string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "path", chi.URLParam(r, "path"), &path, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
+		return
 	}
 
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// PostFiles operation middleware
-func (siw *ServerInterfaceWrapper) PostFiles(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostFiles(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// PutFiles operation middleware
-func (siw *ServerInterfaceWrapper) PutFiles(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PutFiles(w, r)
+		siw.Handler.GetFileTreePath(w, r, path)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -500,16 +479,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/fileTree", wrapper.GetFileTree)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/fileTree/{filePath}", wrapper.GetFileTreeFilePath)
+		r.Post(options.BaseURL+"/fileTree", wrapper.PostFileTree)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/files", wrapper.DeleteFiles)
+		r.Delete(options.BaseURL+"/fileTree/{path}", wrapper.DeleteFileTreePath)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/files", wrapper.PostFiles)
-	})
-	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/files", wrapper.PutFiles)
+		r.Get(options.BaseURL+"/fileTree/{path}", wrapper.GetFileTreePath)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/ping", wrapper.GetPing)
@@ -613,7 +589,7 @@ type GetFileTreeResponseObject interface {
 	VisitGetFileTreeResponse(w http.ResponseWriter) error
 }
 
-type GetFileTree200JSONResponse []File
+type GetFileTree200JSONResponse []FileTreeEntry
 
 func (response GetFileTree200JSONResponse) VisitGetFileTreeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -622,68 +598,61 @@ func (response GetFileTree200JSONResponse) VisitGetFileTreeResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetFileTreeFilePathRequestObject struct {
-	FilePath string `json:"filePath"`
+type PostFileTreeRequestObject struct {
+	Body *PostFileTreeJSONRequestBody
 }
 
-type GetFileTreeFilePathResponseObject interface {
-	VisitGetFileTreeFilePathResponse(w http.ResponseWriter) error
+type PostFileTreeResponseObject interface {
+	VisitPostFileTreeResponse(w http.ResponseWriter) error
 }
 
-type GetFileTreeFilePath200JSONResponse []File
-
-func (response GetFileTreeFilePath200JSONResponse) VisitGetFileTreeFilePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
+type PostFileTree204Response struct {
 }
 
-type DeleteFilesRequestObject struct {
-	Body *DeleteFilesJSONRequestBody
-}
-
-type DeleteFilesResponseObject interface {
-	VisitDeleteFilesResponse(w http.ResponseWriter) error
-}
-
-type DeleteFiles204Response struct {
-}
-
-func (response DeleteFiles204Response) VisitDeleteFilesResponse(w http.ResponseWriter) error {
+func (response PostFileTree204Response) VisitPostFileTreeResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteFiles404Response struct {
+type DeleteFileTreePathRequestObject struct {
+	Path string `json:"path"`
 }
 
-func (response DeleteFiles404Response) VisitDeleteFilesResponse(w http.ResponseWriter) error {
+type DeleteFileTreePathResponseObject interface {
+	VisitDeleteFileTreePathResponse(w http.ResponseWriter) error
+}
+
+type DeleteFileTreePath204Response struct {
+}
+
+func (response DeleteFileTreePath204Response) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteFileTreePath404Response struct {
+}
+
+func (response DeleteFileTreePath404Response) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
 	w.WriteHeader(404)
 	return nil
 }
 
-type PostFilesRequestObject struct {
-	Body *PostFilesJSONRequestBody
+type GetFileTreePathRequestObject struct {
+	Path string `json:"path"`
 }
 
-type PostFilesResponseObject interface {
-	VisitPostFilesResponse(w http.ResponseWriter) error
+type GetFileTreePathResponseObject interface {
+	VisitGetFileTreePathResponse(w http.ResponseWriter) error
 }
 
-type PostFiles204Response struct {
-}
+type GetFileTreePath200JSONResponse []FileTreeEntry
 
-func (response PostFiles204Response) VisitPostFilesResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
+func (response GetFileTreePath200JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
 
-type PutFilesRequestObject struct {
-}
-
-type PutFilesResponseObject interface {
-	VisitPutFilesResponse(w http.ResponseWriter) error
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetPingRequestObject struct {
@@ -737,21 +706,18 @@ type StrictServerInterface interface {
 	// Update file
 	// (PUT /file/{filePath})
 	PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error)
-	// List files including folders
+	// List files and folders in root (/)
 	// (GET /fileTree)
 	GetFileTree(ctx context.Context, request GetFileTreeRequestObject) (GetFileTreeResponseObject, error)
-	// List files including folders
-	// (GET /fileTree/{filePath})
-	GetFileTreeFilePath(ctx context.Context, request GetFileTreeFilePathRequestObject) (GetFileTreeFilePathResponseObject, error)
-	// Delete files or folders
-	// (DELETE /files)
-	DeleteFiles(ctx context.Context, request DeleteFilesRequestObject) (DeleteFilesResponseObject, error)
 	// Add new file or folder
-	// (POST /files)
-	PostFiles(ctx context.Context, request PostFilesRequestObject) (PostFilesResponseObject, error)
-	// Update files
-	// (PUT /files)
-	PutFiles(ctx context.Context, request PutFilesRequestObject) (PutFilesResponseObject, error)
+	// (POST /fileTree)
+	PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error)
+	// Delete files or folders
+	// (DELETE /fileTree/{path})
+	DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error)
+	// List files and folders in the given path
+	// (GET /fileTree/{path})
+	GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error)
 	// Ping server
 	// (GET /ping)
 	GetPing(ctx context.Context, request GetPingRequestObject) (GetPingResponseObject, error)
@@ -876,37 +842,11 @@ func (sh *strictHandler) GetFileTree(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetFileTreeFilePath operation middleware
-func (sh *strictHandler) GetFileTreeFilePath(w http.ResponseWriter, r *http.Request, filePath string) {
-	var request GetFileTreeFilePathRequestObject
+// PostFileTree operation middleware
+func (sh *strictHandler) PostFileTree(w http.ResponseWriter, r *http.Request) {
+	var request PostFileTreeRequestObject
 
-	request.FilePath = filePath
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetFileTreeFilePath(ctx, request.(GetFileTreeFilePathRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetFileTreeFilePath")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetFileTreeFilePathResponseObject); ok {
-		if err := validResponse.VisitGetFileTreeFilePathResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// DeleteFiles operation middleware
-func (sh *strictHandler) DeleteFiles(w http.ResponseWriter, r *http.Request) {
-	var request DeleteFilesRequestObject
-
-	var body DeleteFilesJSONRequestBody
+	var body PostFileTreeJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -914,18 +854,18 @@ func (sh *strictHandler) DeleteFiles(w http.ResponseWriter, r *http.Request) {
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteFiles(ctx, request.(DeleteFilesRequestObject))
+		return sh.ssi.PostFileTree(ctx, request.(PostFileTreeRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteFiles")
+		handler = middleware(handler, "PostFileTree")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DeleteFilesResponseObject); ok {
-		if err := validResponse.VisitDeleteFilesResponse(w); err != nil {
+	} else if validResponse, ok := response.(PostFileTreeResponseObject); ok {
+		if err := validResponse.VisitPostFileTreeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -933,30 +873,25 @@ func (sh *strictHandler) DeleteFiles(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PostFiles operation middleware
-func (sh *strictHandler) PostFiles(w http.ResponseWriter, r *http.Request) {
-	var request PostFilesRequestObject
+// DeleteFileTreePath operation middleware
+func (sh *strictHandler) DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
+	var request DeleteFileTreePathRequestObject
 
-	var body PostFilesJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
+	request.Path = path
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostFiles(ctx, request.(PostFilesRequestObject))
+		return sh.ssi.DeleteFileTreePath(ctx, request.(DeleteFileTreePathRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostFiles")
+		handler = middleware(handler, "DeleteFileTreePath")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostFilesResponseObject); ok {
-		if err := validResponse.VisitPostFilesResponse(w); err != nil {
+	} else if validResponse, ok := response.(DeleteFileTreePathResponseObject); ok {
+		if err := validResponse.VisitDeleteFileTreePathResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -964,23 +899,25 @@ func (sh *strictHandler) PostFiles(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PutFiles operation middleware
-func (sh *strictHandler) PutFiles(w http.ResponseWriter, r *http.Request) {
-	var request PutFilesRequestObject
+// GetFileTreePath operation middleware
+func (sh *strictHandler) GetFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
+	var request GetFileTreePathRequestObject
+
+	request.Path = path
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PutFiles(ctx, request.(PutFilesRequestObject))
+		return sh.ssi.GetFileTreePath(ctx, request.(GetFileTreePathRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PutFiles")
+		handler = middleware(handler, "GetFileTreePath")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PutFilesResponseObject); ok {
-		if err := validResponse.VisitPutFilesResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetFileTreePathResponseObject); ok {
+		if err := validResponse.VisitGetFileTreePathResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1111,17 +1048,18 @@ func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RVT0/bThD9Kqv5/Y5unBZOvtGiVEhtFbX0hDgs9iRZau9ud8ZAFPm7V7N2MAnBLnCh",
-	"lzjyzrx9780fbyB3lXcWLRNkG6B8hZWOf2emRHn64DwGNhjfGjo1Qf7w2iNkcOVcidpCk4DVFT44IQ7G",
-	"LqFpEgj4uzYBC8gu2qikw7ls5NjYhZPEAikPxrNxFjL4pCuvzdKqr9rqJQb1HYnVyfxsAgmwYWH3KAgS",
-	"uMFALcJ08n4yFWbOo9XeQAZHk+nkCBLwmldRT7owJaYb+Z1rXjXyboksD5GthcxZARl8RhZHZl1gxAi6",
-	"QsZAkF1swMiVvj1qrYBFH9xbwKHGpDNarsE7XfkoJpXslF3kJCL3jLwUGPLOUluLD9OpPHJnGW2k7Ett",
-	"bMp4x30xD5WkSfbM/lHnORKJWcct6u75N6d6bCX8lChCYizapONDSfYd3hliY5cqOiMXU11VOqwhg1N3",
-	"a0uni31oAfT1gRrM67dRgyj8oyvWL7W/OVzJN1CTn77QjF0ZmqSdj/OAODYYMWa0QbX3pcljcnpNwuih",
-	"T4axion/B1xABv+l/XZKu9WUzroO6UzVIej1YEvv6PtiqPWKlLF5WRfiw8KVhbTQjuBnLAUJf9uL4R/x",
-	"ndqGLZHxsdmn8f0shg1N4bDW3c9ZLMvoNytGXd5Ld1fXmPPhOT5+co7VreGVsk5tqb54bUYfOjNd6F1M",
-	"wDs6tDYd8WttG++M17qxo/GkKJTF23ar3Wsc+zDQ3gJ6arN1Heel1gOjPZfzZ2xqtY3cEyM4ijDciIJ4",
-	"cXDSQTR4+TZmQFIcqnuwwfr/DdzW9B5RyLKmX4NMz2PAGM0WZpDjKNCWoGDFhvsTAAD///Cu8HC/CgAA",
+	"H4sIAAAAAAAC/9RWzW7bPBB8FWK/79ACquU2OemWNk0RoC2MNj0FObDi2mYqkSy5TmIYevdiSSmKHMVO",
+	"AhRIL5Yg7g5nZn/gDZS2dtagoQDFBkK5xFrG1xNd4ZlH/GjIr/mD89ahJ43xWIdj7fmF1g6hgJ/WVigN",
+	"NBkYWeOdk0BemwU0TQYef6+0RwXFeYrKWpyLho+1mVtOVBhKrx1pa6CAD7J2Ui+M+CKNXKAX3zCQOJqd",
+	"TiAD0lThSBBkcIU+JITp5O1kysysQyOdhgIOJtPJAWTgJC2jnnyuK8w3/DuTtGz42wKJHyxbMplTBQV8",
+	"QmJrTtrAiOFljYQ+QHG+Ac1XunSUrIB5H9xbQH6FWes4X4M3snZRDCfnZCMl1rjl4wWjBGdNSKV4N53y",
+	"o7SG0ETGrpLa5IQ31Bd1rCJNtuX191VZYgjs1WFCHZ5/taLHFsxPsCAMhColHY4lmTd4owNpsxDRGL44",
+	"rOpacmfBsb02lZVqG5oB3WqkBLPViyhB1P3eqvVz3W/GC/kCSvLDKUnYVqHJ0nTwNtg3FjFmb39K5ypd",
+	"xuT8MjCjuz5pwjom/u9xDgX8l/dLKm83VD5cT81tiaT3cr2ztQdCP+uQTAtCGiXmtlLog9BGeGtJvMpf",
+	"xy60YawNbRhqfqghdst9gsqxljl8sGXEtaalMFZ0VIbSj5QSBq9Ty1jfah+WO9+4bhkqrJDwvgvH8XtH",
+	"9NHz6P7iOnyKJc/dWVF12zm35sUp3TceL8Kif3EiaYlioa/Q9AXJHQvcsZNmfP6ENSu6yC1WjCMC+qtu",
+	"Qpy3l1imf00PXt7FDAncl3sLtnPXPAauG+oekcmSDL92Mj2LAftoJpidHPcCdQQZKy60PwEAAP//qgph",
+	"BoMKAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

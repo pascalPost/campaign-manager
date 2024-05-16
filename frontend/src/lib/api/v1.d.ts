@@ -41,47 +41,22 @@ export interface paths {
     };
   };
   "/fileTree": {
-    /** List files including folders */
+    /** List files and folders in root (/) */
     get: {
       responses: {
         /** @description Success */
         200: {
           content: {
-            "application/json": components["schemas"]["File"][];
+            "application/json": components["schemas"]["FileTreeEntry"][];
           };
         };
-      };
-    };
-  };
-  "/fileTree/{filePath}": {
-    /** List files including folders */
-    get: {
-      parameters: {
-        path: {
-          filePath: string;
-        };
-      };
-      responses: {
-        /** @description Success */
-        200: {
-          content: {
-            "application/json": components["schemas"]["File"][];
-          };
-        };
-      };
-    };
-  };
-  "/files": {
-    /** Update files */
-    put: {
-      responses: {
       };
     };
     /** Add new file or folder */
     post: {
       requestBody?: {
         content: {
-          "application/json": components["schemas"]["File"];
+          "application/json": components["schemas"]["FileTreeEntry"];
         };
       };
       responses: {
@@ -91,13 +66,29 @@ export interface paths {
         };
       };
     };
+  };
+  "/fileTree/{path}": {
+    /** List files and folders in the given path */
+    get: {
+      parameters: {
+        path: {
+          path: string;
+        };
+      };
+      responses: {
+        /** @description Success */
+        200: {
+          content: {
+            "application/json": components["schemas"]["FileTreeEntry"][];
+          };
+        };
+      };
+    };
     /** Delete files or folders */
     delete: {
-      requestBody?: {
-        content: {
-          "application/json": {
-            path: string;
-          };
+      parameters: {
+        path: {
+          path: string;
         };
       };
       responses: {
@@ -171,7 +162,7 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
-    File: {
+    FileTreeEntry: {
       name: string;
       isDir: boolean;
     };
