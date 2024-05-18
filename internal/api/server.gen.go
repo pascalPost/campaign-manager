@@ -22,10 +22,20 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// Error defines model for Error.
+type Error struct {
+	Message string `json:"message"`
+}
+
 // FileTreeEntry defines model for FileTreeEntry.
 type FileTreeEntry struct {
 	IsDir bool   `json:"isDir"`
-	Name  string `json:"name"`
+	Path  string `json:"path"`
+}
+
+// FileTreePath defines model for FileTreePath.
+type FileTreePath struct {
+	Path string `json:"path"`
 }
 
 // PostFileTreeJSONRequestBody defines body for PostFileTree for application/json ContentType.
@@ -606,12 +616,22 @@ type PostFileTreeResponseObject interface {
 	VisitPostFileTreeResponse(w http.ResponseWriter) error
 }
 
-type PostFileTree204Response struct {
+type PostFileTree201JSONResponse FileTreePath
+
+func (response PostFileTree201JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response PostFileTree204Response) VisitPostFileTreeResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
+type PostFileTree409JSONResponse Error
+
+func (response PostFileTree409JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type DeleteFileTreePathRequestObject struct {
@@ -1048,18 +1068,19 @@ func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RWzW7bPBB8FWK/79ACquU2OemWNk0RoC2MNj0FObDi2mYqkSy5TmIYevdiSSmKHMVO",
-	"AhRIL5Yg7g5nZn/gDZS2dtagoQDFBkK5xFrG1xNd4ZlH/GjIr/mD89ahJ43xWIdj7fmF1g6hgJ/WVigN",
-	"NBkYWeOdk0BemwU0TQYef6+0RwXFeYrKWpyLho+1mVtOVBhKrx1pa6CAD7J2Ui+M+CKNXKAX3zCQOJqd",
-	"TiAD0lThSBBkcIU+JITp5O1kysysQyOdhgIOJtPJAWTgJC2jnnyuK8w3/DuTtGz42wKJHyxbMplTBQV8",
-	"QmJrTtrAiOFljYQ+QHG+Ac1XunSUrIB5H9xbQH6FWes4X4M3snZRDCfnZCMl1rjl4wWjBGdNSKV4N53y",
-	"o7SG0ETGrpLa5IQ31Bd1rCJNtuX191VZYgjs1WFCHZ5/taLHFsxPsCAMhColHY4lmTd4owNpsxDRGL44",
-	"rOpacmfBsb02lZVqG5oB3WqkBLPViyhB1P3eqvVz3W/GC/kCSvLDKUnYVqHJ0nTwNtg3FjFmb39K5ypd",
-	"xuT8MjCjuz5pwjom/u9xDgX8l/dLKm83VD5cT81tiaT3cr2ztQdCP+uQTAtCGiXmtlLog9BGeGtJvMpf",
-	"xy60YawNbRhqfqghdst9gsqxljl8sGXEtaalMFZ0VIbSj5QSBq9Ty1jfah+WO9+4bhkqrJDwvgvH8XtH",
-	"9NHz6P7iOnyKJc/dWVF12zm35sUp3TceL8Kif3EiaYlioa/Q9AXJHQvcsZNmfP6ENSu6yC1WjCMC+qtu",
-	"Qpy3l1imf00PXt7FDAncl3sLtnPXPAauG+oekcmSDL92Mj2LAftoJpidHPcCdQQZKy60PwEAAP//qgph",
-	"BoMKAAA=",
+	"H4sIAAAAAAAC/9RWT08bPxD9Kv7NrweQttlQuHRvtECF1FZRS0+Ig7ueJKa7tjt2gCja716Nd/Nnk00C",
+	"CKn0Qlb2+M2bN89jZpDb0lmDJnjIZuDzMZYyfp4TWeIPR9YhBY1xuUTv5Qj5M0wdQgY+kDYjqKoECH9P",
+	"NKGC7HoReFMlcKELvCLEcxNouomp/ZmmFcSf1hYoDVQJOBnGvIMPsnQFb/JKGmw61AVCsodEPJ40CVaZ",
+	"DBrcNpGXyHZT8bI2Q8tICn1O2gVtDWTwUZZO6pERX6SRIyTxDX0Qp4PLHmPrEFOuB0ECd0i+Ruj3jnp9",
+	"FsY6NNJpyOC41+8dQy1VrCKSTWf8l8useG2EgX+4WMlkLhVk8AkD63HRBEYMkiUGJA/Z9Qy0aSSABIws",
+	"md1wGbwsPdAEk8Y8bf3SVQHFwYQKgSa3SpuRMIgK1X+HHbreMLp31vi6Me/6ff7JrQloYiWukNqkAR/C",
+	"0rddpqyStR58n+Q5es8antSo7f2vViyxRaTNhaIPqOpDJ12HzFt80D5wXVEwTuwnZSnZ8HBm701hpVqH",
+	"jhafdLRmMHnVrYl6fLBq+tyuVN0NfgWt+uGUDNh0p0rq28QjY981ijF7fSudK3QeD6e3nhmt6qQDlvHg",
+	"G8IhZPB/upzPaTOc0/Y0rRYtkkRyutPyrUI/a1+L5oU0SgxtoZC80EaQtUEcpIfRndZ32dP6ds3bDLG7",
+	"3CdU2WWZoxdPNqj9sKEgr4ucUAZUvdpa718sef3SbssqC0KppiJ61vfWmniqlDB4X5vfUtPFtnHTmZs/",
+	"AwoLDLjZz7O43lLhMRPH/YWH4GTrnBD3OoyFsWLelWdP66hGczcWosY5tG8AvGrp/sVZFMYoRvoOzbJR",
+	"qeMCd0zjAe8/4YER88g1VowjPNLd/EY5sreY1/8qb00+j2kT2Cx3AbZzyj4Gbj4ElohMNkj/ayfTqxiw",
+	"j2YNs5PjXqA5QcaKo/xPAAAA///pDu01eAwAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

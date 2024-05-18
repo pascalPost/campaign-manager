@@ -33,10 +33,10 @@ func TestGetFileTree(t *testing.T) {
 
 				assert.Equal(t, 2, len(fileTreeEntry))
 
-				assert.Equal(t, "dir", fileTreeEntry[0].Name)
+				assert.Equal(t, "dir", fileTreeEntry[0].Path)
 				assert.Equal(t, true, fileTreeEntry[0].IsDir)
 
-				assert.Equal(t, "test.txt", fileTreeEntry[1].Name)
+				assert.Equal(t, "test.txt", fileTreeEntry[1].Path)
 				assert.Equal(t, false, fileTreeEntry[1].IsDir)
 			},
 		},
@@ -58,7 +58,7 @@ func TestGetFileTree(t *testing.T) {
 
 				assert.Equal(t, 1, len(fileTreeEntry))
 
-				assert.Equal(t, "test_nested.txt", fileTreeEntry[0].Name)
+				assert.Equal(t, "test_nested.txt", fileTreeEntry[0].Path)
 				assert.Equal(t, false, fileTreeEntry[0].IsDir)
 			},
 		},
@@ -96,30 +96,83 @@ func TestGetFileTree(t *testing.T) {
 
 func TestPostFileTree(t *testing.T) {
 	tests := []struct {
-		requestBody        PostFileTreeJSONRequestBody
-		expectedStatusCode int
+		description string
+		requestBody PostFileTreeJSONRequestBody
+		checks      func(t *testing.T, rr *httptest.ResponseRecorder)
 	}{
 		{
+			description: "New folder creation",
 			requestBody: PostFileTreeJSONRequestBody{
 				IsDir: true,
-				Name:  "test",
+				Path:  "test",
 			},
-			expectedStatusCode: http.StatusNoContent,
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusCreated, rr.Code)
+
+				res := PostFileTree201JSONResponse{}
+				err := json.NewDecoder(rr.Body).Decode(&res)
+				assert.NoError(t, err)
+				assert.Equal(t, "test", res.Path)
+			},
 		},
 		{
+			description: "New file creation",
 			requestBody: PostFileTreeJSONRequestBody{
 				IsDir: false,
-				Name:  "test.txt",
+				Path:  "test.txt",
 			},
-			expectedStatusCode: http.StatusNoContent,
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusCreated, rr.Code)
+
+				res := PostFileTree201JSONResponse{}
+				err := json.NewDecoder(rr.Body).Decode(&res)
+				assert.NoError(t, err)
+				assert.Equal(t, "test.txt", res.Path)
+			},
+		},
+		{
+			description: "Post of an already existing folder",
+			requestBody: PostFileTreeJSONRequestBody{
+				IsDir: true,
+				Path:  "dir",
+			},
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusConflict, rr.Code)
+
+				res := PostFileTree409JSONResponse{}
+				err := json.NewDecoder(rr.Body).Decode(&res)
+				assert.NoError(t, err)
+				assert.Equal(t, "Path already exists.", res.Message)
+			},
+		},
+		{
+			description: "Nested file creation",
+			requestBody: PostFileTreeJSONRequestBody{
+				IsDir: false,
+				Path:  "test/test.txt",
+			},
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusCreated, rr.Code)
+
+				res := PostFileTree201JSONResponse{}
+				err := json.NewDecoder(rr.Body).Decode(&res)
+				assert.NoError(t, err)
+				assert.Equal(t, "test/test.txt", res.Path)
+			},
 		},
 	}
 
 	prefix := t.TempDir()
+
+	err := os.MkdirAll(path.Join(prefix, "dir"), 0o777)
+	assert.NoError(t, err)
+
 	server := NewServer(prefix)
 	handler := Handler(NewStrictHandler(server, nil))
 
 	for _, test := range tests {
+		t.Log(test.description)
+
 		reqBody, err := json.Marshal(test.requestBody)
 		assert.NoError(t, err)
 
@@ -129,18 +182,21 @@ func TestPostFileTree(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		assert.Equal(t, test.expectedStatusCode, rr.Code)
+		test.checks(t, rr)
 	}
 
 	files, err := os.ReadDir(prefix)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(files))
+	assert.Equal(t, 3, len(files))
 
-	assert.Equal(t, "test", files[0].Name())
+	assert.Equal(t, "dir", files[0].Name())
 	assert.Equal(t, true, files[0].IsDir())
 
-	assert.Equal(t, "test.txt", files[1].Name())
-	assert.Equal(t, false, files[1].IsDir())
+	assert.Equal(t, "test", files[1].Name())
+	assert.Equal(t, true, files[1].IsDir())
+
+	assert.Equal(t, "test.txt", files[2].Name())
+	assert.Equal(t, false, files[2].IsDir())
 }
 
 //func TestDeleteFiles(t *testing.T) {

@@ -53,8 +53,19 @@ paths:
             schema:
               $ref: "#/components/schemas/FileTreeEntry"
       responses:
-        204:
-          description: Success with no content
+        201:
+          description: Path created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileTreePath"
+        409:
+          description: Path already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                example: "Path already exists."
 
   /fileTree/{path}:
     get:
@@ -89,9 +100,9 @@ paths:
           description: Success with no content
         404:
           description: Non-existing path
-#    put:
-#      summary: Update files
-#      responses: { }
+  #    put:
+  #      summary: Update files
+  #      responses: { }
 
   /file/{filePath}:
     get:
@@ -138,12 +149,26 @@ paths:
 
 components:
   schemas:
+    FileTreePath:
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          example: "path/to/file"
     FileTreeEntry:
       required:
-        - name
+        - path
         - isDir
       properties:
-        name:
+        path:
           type: string
+          example: "path/to/file"
         isDir:
           type: boolean
+    Error:
+      required:
+        - message
+      properties:
+        message:
+          type: string

@@ -1,7 +1,130 @@
-import { ReactElement, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { useQuery } from "react-query";
+import React, { ReactElement, useEffect, useState } from "react";
+import { ChevronDown, ChevronRight, Plus, Settings } from "lucide-react";
+import { useMutation, useQuery } from "react-query";
 import { client } from "@/lib/api/client.ts";
+import { Button } from "@/components/ui/button.tsx";
+import { clsx } from "clsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form.tsx";
+import { toast } from "sonner";
+
+async function postFileTree(path: string, isDir: boolean): Promise<string> {
+  const { data, error } = await client.POST("/fileTree", {
+    body: { isDir: isDir, path: path },
+  });
+  if (error) throw error;
+  if (!data) return "";
+  return data.path;
+}
+
+const folderNameSchema = z.object({
+  folderName: z.string().min(1).max(50),
+});
+
+function AddFolderForm() {
+  const form = useForm<z.infer<typeof folderNameSchema>>({
+    resolver: zodResolver(folderNameSchema),
+    defaultValues: {
+      folderName: "",
+    },
+  });
+
+  const mutation = useMutation({
+    mutationFn: (filePath: string) => postFileTree(filePath, true),
+    onError: (e) => {
+      toast.error(`Error on folder creation: ${e.message}`);
+    },
+  });
+
+  function onSubmit(value: z.infer<typeof folderNameSchema>) {
+    // Do something with the form values.
+    // ✅ This will be type-safe and validated.
+    console.log(`Adding folder: ${value.folderName}`);
+    mutation.mutate(value.folderName);
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        <FormField
+          control={form.control}
+          name="folderName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Folder</FormLabel>
+              <FormControl>
+                <Input placeholder="folder-name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" className="w-full">
+          Add Folder
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
+function FolderMenu({ path }: { path: string }) {
+  return (
+    <div className="invisible flex flex-row items-center gap-1 group-hover:visible">
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="icon" className="h-6 w-6">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Add folder or file to:
+              <code className="relative ml-1 rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold">
+                {path}
+              </code>
+            </DialogTitle>
+            <div className="flex flex-col gap-8 py-4">
+              <AddFolderForm />
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="file" className="text-left">
+                  File
+                </Label>
+                <Input
+                  id="file"
+                  defaultValue="file.name"
+                  className="col-span-3"
+                />
+                <Button>Add File</Button>
+              </div>
+            </div>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      <Button variant="outline" size="icon" className="h-6 w-6">
+        <Settings className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 type File = {
   type: "file";
@@ -27,16 +150,26 @@ function FileTreeFile({
   file: File;
   selectedFileProps: SelectedFileProps;
 }): ReactElement {
-  const fileName = file.path.split("/").pop() || file.path;
+  const selected: boolean = file.path === selectedFileProps.selectedFile;
+  const fileName: string = file.path.split("/").pop() || file.path;
 
   return (
-    <li className="flex flex-row">
-      <div className="w-5" />
+    <li
+      className={clsx(
+        "group flex w-full flex-row justify-between",
+        selected && "bg-secondary",
+      )}
+    >
       <div
         onClick={() => selectedFileProps.handleChangeSelectedFile(file.path)}
-        className="hover:cursor-pointer"
+        className="ml-5 hover:cursor-pointer"
       >
         {fileName}
+      </div>
+      <div className="invisible flex flex-row items-center gap-1 group-hover:visible">
+        <Button variant="outline" size="icon" className="h-6 w-6">
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
     </li>
   );
@@ -73,13 +206,13 @@ async function getFileTree(path: string, signal?: AbortSignal) {
     if (entry.isDir) {
       return {
         type: "folder",
-        path: entry.name,
+        path: entry.path,
         isFolded: true,
       };
     } else {
       return {
         type: "file",
-        path: entry.name,
+        path: entry.path,
       };
     }
   });
@@ -119,39 +252,39 @@ function FileTreeFolder({
 
   if (isFolded) {
     return (
-      <>
-        <li className="flex flex-row items-center">
+      <li className="group flex h-7 w-full flex-row justify-between">
+        <div className="flex flex-row items-center">
           <ChevronRight
-            className="mt-1 h-4 w-5 hover:cursor-pointer"
+            className="h-4 w-4 hover:cursor-pointer"
             onClick={() => onChangeFold(path, false)}
           />
           <div>{folderName}</div>
-        </li>
-      </>
+        </div>
+        <FolderMenu path={path} />
+      </li>
     );
   }
 
-  if (query.isLoading) {
-    return "Loading...";
-  }
+  if (query.isLoading) return "Loading...";
 
-  if (query.isError) {
-    return "Error.";
-  }
+  if (query.isError) return "Error.";
 
   if (query.isSuccess) {
     const folder = tree.get(path) as Folder;
 
     return (
       <>
-        <li className="flex flex-row items-center">
-          <ChevronDown
-            className="mt-1 h-4 w-5 hover:cursor-pointer"
-            onClick={() => onChangeFold(path, true)}
-          />
-          {folderName}
+        <li className="group flex h-7 w-full flex-row justify-between">
+          <div className="flex flex-row items-center">
+            <ChevronDown
+              className="h-4 w-4 hover:cursor-pointer"
+              onClick={() => onChangeFold(path, true)}
+            />
+            {folderName}
+          </div>
+          <FolderMenu path={path} />
         </li>
-        <ul className="px-4">
+        <ul className="pl-4">
           {folder.childPaths?.map((entry) => {
             const res = tree.get(entry);
             if (!res) return;
@@ -188,6 +321,7 @@ function FileTree({
 }: {
   selectedFileProps: SelectedFileProps;
 }) {
+  // TODO: enhance with immer
   const [tree, setTree] = useState(
     new Map<string, Folder | File>([
       [
@@ -219,7 +353,7 @@ function FileTree({
 
   return (
     <>
-      <ul className="px-1">
+      <ul className="mx-1 mt-1">
         <FileTreeFolder
           key={"/"}
           path={"/"}

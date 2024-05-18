@@ -60,9 +60,17 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Success with no content */
-        204: {
-          content: never;
+        /** @description Path created. */
+        201: {
+          content: {
+            "application/json": components["schemas"]["FileTreePath"];
+          };
+        };
+        /** @description Path already exists. */
+        409: {
+          content: {
+            "application/json": components["schemas"]["Error"];
+          };
         };
       };
     };
@@ -162,9 +170,17 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    FileTreePath: {
+      /** @example path/to/file */
+      path: string;
+    };
     FileTreeEntry: {
-      name: string;
+      /** @example path/to/file */
+      path: string;
       isDir: boolean;
+    };
+    Error: {
+      message: string;
     };
   };
   responses: never;

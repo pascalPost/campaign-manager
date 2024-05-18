@@ -33,7 +33,7 @@ func getFileTree(prefix string, filePath string) ([]FileTreeEntry, error) {
 	result := make([]FileTreeEntry, 0, len(files))
 	for _, f := range files {
 		result = append(result, FileTreeEntry{
-			Name:  f.Name(),
+			Path:  f.Name(),
 			IsDir: f.IsDir(),
 		})
 	}
@@ -58,13 +58,15 @@ func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreeP
 }
 
 func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
-	name := path.Join(s.Prefix, request.Body.Name)
+	reqPath := request.Body.Path
+	name := path.Join(s.Prefix, reqPath)
 	isDir := request.Body.IsDir
 
 	_, err := os.Stat(name)
-	if err != nil && !os.IsNotExist(err) {
-		// already exists
-		return nil, err
+	if err == nil {
+		return PostFileTree409JSONResponse{
+			Message: "Path already exists.",
+		}, nil
 	}
 
 	if isDir {
@@ -79,7 +81,9 @@ func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeReq
 		}
 	}
 
-	return PostFileTree204Response{}, nil
+	return PostFileTree201JSONResponse{
+		Path: reqPath,
+	}, nil
 }
 
 func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
