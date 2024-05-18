@@ -49,16 +49,16 @@ type ServerInterface interface {
 	// Update file
 	// (PUT /file/{filePath})
 	PutFileFilePath(w http.ResponseWriter, r *http.Request, filePath string)
-	// List files and folders in root (/)
+	// List paths in root
 	// (GET /fileTree)
 	GetFileTree(w http.ResponseWriter, r *http.Request)
-	// Add new file or folder
+	// Add new path
 	// (POST /fileTree)
 	PostFileTree(w http.ResponseWriter, r *http.Request)
-	// Delete files or folders
+	// Delete path
 	// (DELETE /fileTree/{path})
 	DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string)
-	// List files and folders in the given path
+	// List nested paths
 	// (GET /fileTree/{path})
 	GetFileTreePath(w http.ResponseWriter, r *http.Request, path string)
 	// Ping server
@@ -94,25 +94,25 @@ func (_ Unimplemented) PutFileFilePath(w http.ResponseWriter, r *http.Request, f
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List files and folders in root (/)
+// List paths in root
 // (GET /fileTree)
 func (_ Unimplemented) GetFileTree(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Add new file or folder
+// Add new path
 // (POST /fileTree)
 func (_ Unimplemented) PostFileTree(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Delete files or folders
+// Delete path
 // (DELETE /fileTree/{path})
 func (_ Unimplemented) DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List files and folders in the given path
+// List nested paths
 // (GET /fileTree/{path})
 func (_ Unimplemented) GetFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -642,20 +642,22 @@ type DeleteFileTreePathResponseObject interface {
 	VisitDeleteFileTreePathResponse(w http.ResponseWriter) error
 }
 
-type DeleteFileTreePath204Response struct {
+type DeleteFileTreePath200JSONResponse FileTreePath
+
+func (response DeleteFileTreePath200JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response DeleteFileTreePath204Response) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
+type DeleteFileTreePath404JSONResponse Error
 
-type DeleteFileTreePath404Response struct {
-}
-
-func (response DeleteFileTreePath404Response) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
+func (response DeleteFileTreePath404JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetFileTreePathRequestObject struct {
@@ -726,16 +728,16 @@ type StrictServerInterface interface {
 	// Update file
 	// (PUT /file/{filePath})
 	PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error)
-	// List files and folders in root (/)
+	// List paths in root
 	// (GET /fileTree)
 	GetFileTree(ctx context.Context, request GetFileTreeRequestObject) (GetFileTreeResponseObject, error)
-	// Add new file or folder
+	// Add new path
 	// (POST /fileTree)
 	PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error)
-	// Delete files or folders
+	// Delete path
 	// (DELETE /fileTree/{path})
 	DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error)
-	// List files and folders in the given path
+	// List nested paths
 	// (GET /fileTree/{path})
 	GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error)
 	// Ping server
@@ -1068,19 +1070,19 @@ func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RWT08bPxD9Kv7NrweQttlQuHRvtECF1FZRS0+Ig7ueJKa7tjt2gCja716Nd/Nnk00C",
-	"CKn0Qlb2+M2bN89jZpDb0lmDJnjIZuDzMZYyfp4TWeIPR9YhBY1xuUTv5Qj5M0wdQgY+kDYjqKoECH9P",
-	"NKGC7HoReFMlcKELvCLEcxNouomp/ZmmFcSf1hYoDVQJOBnGvIMPsnQFb/JKGmw61AVCsodEPJ40CVaZ",
-	"DBrcNpGXyHZT8bI2Q8tICn1O2gVtDWTwUZZO6pERX6SRIyTxDX0Qp4PLHmPrEFOuB0ECd0i+Ruj3jnp9",
-	"FsY6NNJpyOC41+8dQy1VrCKSTWf8l8useG2EgX+4WMlkLhVk8AkD63HRBEYMkiUGJA/Z9Qy0aSSABIws",
-	"md1wGbwsPdAEk8Y8bf3SVQHFwYQKgSa3SpuRMIgK1X+HHbreMLp31vi6Me/6ff7JrQloYiWukNqkAR/C",
-	"0rddpqyStR58n+Q5es8antSo7f2vViyxRaTNhaIPqOpDJ12HzFt80D5wXVEwTuwnZSnZ8HBm701hpVqH",
-	"jhafdLRmMHnVrYl6fLBq+tyuVN0NfgWt+uGUDNh0p0rq28QjY981ijF7fSudK3QeD6e3nhmt6qQDlvHg",
-	"G8IhZPB/upzPaTOc0/Y0rRYtkkRyutPyrUI/a1+L5oU0SgxtoZC80EaQtUEcpIfRndZ32dP6ds3bDLG7",
-	"3CdU2WWZoxdPNqj9sKEgr4ucUAZUvdpa718sef3SbssqC0KppiJ61vfWmniqlDB4X5vfUtPFtnHTmZs/",
-	"AwoLDLjZz7O43lLhMRPH/YWH4GTrnBD3OoyFsWLelWdP66hGczcWosY5tG8AvGrp/sVZFMYoRvoOzbJR",
-	"qeMCd0zjAe8/4YER88g1VowjPNLd/EY5sreY1/8qb00+j2kT2Cx3AbZzyj4Gbj4ElohMNkj/ayfTqxiw",
-	"j2YNs5PjXqA5QcaKo/xPAAAA///pDu01eAwAAA==",
+	"H4sIAAAAAAAC/8xWT08bPxD9Kv7Nr4dW2mZD4dK90QIVEq2ilp4QB3c9Caa7Y9f2AlG0370a7+bPhiWB",
+	"EiEuiWWP38y8eTPeGeSmtIaQgodsBj6/wlLG5bFzxvHCOmPRBY1xu0Tv5QR5GaYWIQMfnKYJ1HUCDv9U",
+	"2qGC7GJheFkncKILPHeIxxTc9D6m9kfarSD+MqZASVAnYGW44hO8k6Ut+JB30mDSsS4Qki1BxOtJ62A1",
+	"klGL2w1kF94ua97WNDaMpNDnTtugDUEGn2VppZ6Q+CpJTtCJ7+iDOBydDhhbh+hy3QgSuEHnG4ThYG8w",
+	"ZGKMRZJWQwb7g+FgHxqqYhYx2HTGv5xmzXsTDPzHyUoO5lRBBl8wMB8nrWHEcLLEgM5DdjEDTS0FkADJ",
+	"kqMbL42XqQdXYdKKp8tfukqgeFu5QiDlRmmaCEJUqP5718PrJaN7a8g3hfkwHPJfbiggxUxsITWlAe/C",
+	"Urd9oqyTtRr8qPIcvWcODxrU7vk3I5bYIobNiaIPqJpLB32X6D3eaR84r0gYO/ZVWUoWPByZWyqMVOvQ",
+	"UeJVT2lG1asuTeTjk1HTf61K3V/gV1Cqn1bJgG116qTpJh4Z29oo2mzVrbS20Hm8nF57jmiVJx2wjBff",
+	"OBxDBv+ny/mctsM57U7TelEi6ZycbpR8J9Ez7UMkwAtNwhkTohqN75Oj8d0cHxLA5vSekFWfRPZ27mzU",
+	"1P8eY7wvcodyoaSPO/PdPKwPOZWFQ6mmIkp0vWSHSgnC26VsF+JMZ3Y+6hUWGPB+DY/ififzZ6r1OQx3",
+	"evvghcglE8TYVKTWx3OkpqU12drlu+DuxTud4lhsGr75str2ntjHvyWPe0pKTWdIE/7G2ut5WFjPltcb",
+	"Bu2Iz5/wdoi55RoljCM8uht0TSNZZ64xb76CH3Q+t+kG0DNV54YbB+pj4BYdv0DkYIP0vzdGeh4NtoXZ",
+	"wGyMcSvQPEDGilP7bwAAAP//a8AKb1MMAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

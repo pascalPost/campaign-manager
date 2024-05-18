@@ -35,7 +35,7 @@ paths:
 
   /fileTree:
     get:
-      summary: List files and folders in root (/)
+      summary: List paths in root
       responses:
         200:
           description: Success
@@ -46,7 +46,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/FileTreeEntry"
     post:
-      summary: Add new file or folder
+      summary: Add new path
       requestBody:
         content:
           application/json:
@@ -54,13 +54,13 @@ paths:
               $ref: "#/components/schemas/FileTreeEntry"
       responses:
         201:
-          description: Path created.
+          description: Path created
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/FileTreePath"
         409:
-          description: Path already exists.
+          description: Path already exists
           content:
             application/json:
               schema:
@@ -68,15 +68,16 @@ paths:
                 example: "Path already exists."
 
   /fileTree/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        allowReserved: false
+        schema:
+          type: string
+          example: "path/to/file (url encoding needed!)"
     get:
-      summary: List files and folders in the given path
-      parameters:
-        - name: path
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "/path/to/file (url encoding needed!)"
+      summary: List nested paths
       responses:
         200:
           description: Success
@@ -86,23 +87,37 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/FileTreeEntry"
+        400:
+          description: Non local Path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                example: "Non local Path."
     delete:
-      summary: Delete files or folders
-      parameters:
-        - name: path
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "/path/to/file (url encoding needed!)"
+      summary: Delete path
       responses:
-        204:
-          description: Success with no content
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileTreePath"
+        400:
+          description: Non local Path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                example: "Non local Path."
         404:
-          description: Non-existing path
-  #    put:
-  #      summary: Update files
-  #      responses: { }
+          description: Path not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                example: "Path not found."
+
 
   /file/{filePath}:
     get:

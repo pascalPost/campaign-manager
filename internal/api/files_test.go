@@ -8,11 +8,31 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestIsLocal(t *testing.T) {
+	tests := []struct {
+		filepath string
+		expected bool
+	}{
+		{"/../", false},
+		{"/abs/test/../folder", false},
+		{"test/../folder", true},
+		{"./test/../folder/../../test", false},
+		{"./test/../folder/../test", true},
+		{"", false},
+	}
+
+	for _, test := range tests {
+		res := filepath.IsLocal(test.filepath)
+		assert.Equal(t, test.expected, res)
+	}
+}
 
 func TestGetFileTree(t *testing.T) {
 	tests := []struct {
@@ -160,7 +180,19 @@ func TestPostFileTree(t *testing.T) {
 				assert.Equal(t, "test/test.txt", res.Path)
 			},
 		},
+		//{
+		//	description: "New folder creation including points in path",
+		//	requestBody: PostFileTreeJSONRequestBody{
+		//		IsDir: true,
+		//		Path:  "test/../../outOfRoot",
+		//	},
+		//	checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+		//		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		//	},
+		//},
 	}
+
+	// TODO check if specified path is local!
 
 	prefix := t.TempDir()
 
@@ -199,94 +231,89 @@ func TestPostFileTree(t *testing.T) {
 	assert.Equal(t, false, files[2].IsDir())
 }
 
-//func TestDeleteFiles(t *testing.T) {
-//	tests := []struct {
-//		description        string
-//		prepFunc           func(prefix string, t *testing.T)
-//		requestBody        DeleteFilesJSONRequestBody
-//		expectedStatusCode int
-//		postTestCheck      func(prefix string, t *testing.T)
-//	}{
-//		{
-//			description: "Test (empty) folder deletion",
-//			prepFunc: func(prefix string, t *testing.T) {
-//				// create a directory in the prefix
-//				err := os.MkdirAll(path.Join(prefix, "test"), 0o777)
-//				assert.NoError(t, err)
-//
-//				// check if folder was created
-//				files, err := os.ReadDir(prefix)
-//				assert.NoError(t, err)
-//				assert.Equal(t, 1, len(files))
-//				assert.Equal(t, "test", files[0].Name())
-//				assert.Equal(t, true, files[0].IsDir())
-//			},
-//			requestBody: DeleteFilesJSONRequestBody{
-//				Path: "test",
-//			},
-//			expectedStatusCode: http.StatusNoContent,
-//			postTestCheck: func(prefix string, t *testing.T) {
-//				files, err := os.ReadDir(prefix)
-//				assert.NoError(t, err)
-//				assert.Equal(t, 0, len(files), "The prefix folder should now be empty as the folder test was deleted.")
-//			},
-//		},
-//		{
-//			description: "Test file deletion",
-//			prepFunc: func(prefix string, t *testing.T) {
-//				// create a new file in the prefix
-//				err := os.WriteFile(path.Join(prefix, "test.txt"), []byte("test"), 0o644)
-//				assert.NoError(t, err)
-//
-//				// check if file was created
-//				files, err := os.ReadDir(prefix)
-//				assert.NoError(t, err)
-//				assert.Equal(t, 1, len(files))
-//				assert.Equal(t, "test.txt", files[0].Name())
-//				assert.Equal(t, false, files[0].IsDir())
-//			},
-//			requestBody: DeleteFilesJSONRequestBody{
-//				Path: "test.txt",
-//			},
-//			expectedStatusCode: http.StatusNoContent,
-//			postTestCheck: func(prefix string, t *testing.T) {
-//				files, err := os.ReadDir(prefix)
-//				assert.NoError(t, err)
-//				assert.Equal(t, 0, len(files), "The prefix folder should now be empty as the file test.txt was deleted.")
-//			},
-//		},
-//		{
-//			description: "Test non-existing path deletion",
-//			prepFunc:    func(prefix string, t *testing.T) {},
-//			requestBody: DeleteFilesJSONRequestBody{
-//				Path: "nonExisting.txt",
-//			},
-//			expectedStatusCode: http.StatusNotFound,
-//			postTestCheck:      func(prefix string, t *testing.T) {},
-//		},
-//	}
-//
-//	prefix := t.TempDir()
-//
-//	server := NewServer(prefix)
-//	handler := Handler(NewStrictHandler(server, nil))
-//
-//	for _, test := range tests {
-//		test.prepFunc(prefix, t)
-//
-//		reqBody, err := json.Marshal(test.requestBody)
-//		assert.NoError(t, err)
-//
-//		req, err := http.NewRequest("DELETE", "/files", bytes.NewReader(reqBody))
-//		assert.NoError(t, err)
-//
-//		rr := httptest.NewRecorder()
-//		handler.ServeHTTP(rr, req)
-//		assert.Equal(t, test.expectedStatusCode, rr.Code)
-//
-//		test.postTestCheck(prefix, t)
-//	}
-//}
+func TestDeleteFileTree(t *testing.T) {
+	tests := []struct {
+		description string
+		prep        func(t *testing.T, prefix string)
+		url         string
+		checks      func(t *testing.T, rr *httptest.ResponseRecorder, prefix string)
+	}{
+		{
+			description: "Test (empty) folder deletion",
+			prep: func(t *testing.T, prefix string) {
+				// create a directory in the prefix
+				err := os.MkdirAll(path.Join(prefix, "test"), 0o777)
+				assert.NoError(t, err)
+
+				// check if folder was created
+				files, err := os.ReadDir(prefix)
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(files))
+				assert.Equal(t, "test", files[0].Name())
+				assert.Equal(t, true, files[0].IsDir())
+			},
+			url: "/fileTree/test",
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder, prefix string) {
+				assert.Equal(t, http.StatusOK, rr.Code)
+				assert.JSONEq(t, `{"path" : "test"}`, rr.Body.String())
+
+				files, err := os.ReadDir(prefix)
+				assert.NoError(t, err)
+				assert.Equal(t, 0, len(files), "The prefix folder should now be empty as the folder test was deleted.")
+			},
+		},
+		{
+			description: "Test file deletion",
+			prep: func(t *testing.T, prefix string) {
+				// create a new file in the prefix
+				err := os.WriteFile(path.Join(prefix, "test.txt"), []byte("test"), 0o644)
+				assert.NoError(t, err)
+
+				// check if file was created
+				files, err := os.ReadDir(prefix)
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(files))
+				assert.Equal(t, "test.txt", files[0].Name())
+				assert.Equal(t, false, files[0].IsDir())
+			},
+			url: "/fileTree/test.txt",
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder, prefix string) {
+				assert.Equal(t, http.StatusOK, rr.Code)
+				assert.JSONEq(t, `{"path" : "test.txt"}`, rr.Body.String())
+
+				files, err := os.ReadDir(prefix)
+				assert.NoError(t, err)
+				assert.Equal(t, 0, len(files), "The prefix folder should now be empty as the file test.txt was deleted.")
+			},
+		},
+		//{
+		//	description: "Test non-existing path deletion",
+		//	prep:        func(prefix string, t *testing.T) {},
+		//	requestBody: DeleteFilesJSONRequestBody{
+		//		Path: "nonExisting.txt",
+		//	},
+		//	expectedStatusCode: http.StatusNotFound,
+		//	postTestCheck:      func(prefix string, t *testing.T) {},
+		//},
+	}
+
+	prefix := t.TempDir()
+
+	server := NewServer(prefix)
+	handler := Handler(NewStrictHandler(server, nil))
+
+	for _, test := range tests {
+		test.prep(t, prefix)
+
+		req, err := http.NewRequest("DELETE", test.url, nil)
+		assert.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		test.checks(t, rr, prefix)
+	}
+}
 
 func TestGetFileFilePath(t *testing.T) {
 	tests := []struct {

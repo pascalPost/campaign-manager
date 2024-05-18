@@ -16,6 +16,11 @@ type FilesService struct {
 	Prefix string
 }
 
+// isSavePath checks the given path to prevent path traversal attacks
+func isSavePath(path string) bool {
+	return filepath.IsLocal(path)
+}
+
 func NewFilesService(prefix string) *FilesService {
 	return &FilesService{
 		Prefix: prefix,
@@ -50,6 +55,10 @@ func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeReque
 }
 
 func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error) {
+	if !isSavePath(request.Path) {
+		return nil, GetFileTreePath400JSONResponse
+	}
+
 	result, err := getFileTree(s.Prefix, request.Path)
 	if err != nil {
 		return nil, err
@@ -58,7 +67,12 @@ func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreeP
 }
 
 func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
+	if !isSavePath(request.Body.Path) {
+		return nil, GetFileTreePath400JSONResponse
+	}
+
 	reqPath := request.Body.Path
+
 	name := path.Join(s.Prefix, reqPath)
 	isDir := request.Body.IsDir
 
@@ -87,24 +101,31 @@ func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeReq
 }
 
 func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
-	//p := path.Join(s.Prefix, request.Body.Path)
-	//
-	//_, err := os.Stat(p)
-	//if err != nil {
-	//	if os.IsNotExist(err) {
-	//		return DeleteFiles404Response{}, nil
-	//	}
-	//
-	//	return nil, err
-	//}
-	//
-	//err = os.RemoveAll(p)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//return DeleteFiles204Response{}, nil
-	panic("implement me")
+	if !isSavePath(request.Path) {
+		return nil, GetFileTreePath400JSONResponse
+	}
+
+	reqPath := filepath.Join(s.Prefix, request.Path)
+
+	_, err := os.Stat(reqPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return DeleteFileTreePath404JSONResponse{
+				Message: "Path not found.",
+			}, nil
+		}
+
+		return nil, err
+	}
+
+	err = os.RemoveAll(reqPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return DeleteFileTreePath200JSONResponse{
+		Path: request.Path,
+	}, nil
 }
 
 //func (s *FilesService) PutFiles(ctx context.Context, request PutFileTreeRequestObject) (PutFilesResponseObject, error) {
@@ -113,6 +134,10 @@ func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFil
 //}
 
 func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error) {
+	if !isSavePath(request.FilePath) {
+		return nil, GetFileTreePath400JSONResponse
+	}
+
 	filePath := filepath.Join(s.Prefix, request.FilePath)
 
 	fileInfo, err := os.Stat(filePath)
@@ -149,6 +174,14 @@ func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFileP
 }
 
 func (s *FilesService) PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error) {
+	if !isSavePath(request.FilePath) {
+		return nil, GetFileTreePath400JSONResponse
+	}
+
+	if strings.Contains(request.FilePath, ".") {
+		return PutFileFilePath400Response{}, nil
+	}
+
 	filePath := filepath.Join(s.Prefix, request.FilePath)
 
 	fileInfo, err := os.Stat(filePath)
