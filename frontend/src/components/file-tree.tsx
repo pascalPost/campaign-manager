@@ -36,7 +36,7 @@ async function postFileTree(path: string, isDir: boolean): Promise<string> {
 }
 
 async function deleteFileTree(path: string): Promise<void> {
-    const {data, error} = await client.DELETE("/fileTree", {
+    const {data, error} = await client.DELETE("/fileTree/{path}", {
         body: {isDir: isDir, path: path},
     });
     if (error) throw error;
@@ -45,10 +45,11 @@ async function deleteFileTree(path: string): Promise<void> {
 }
 
 const folderNameSchema = z.object({
+    // TODO disable / and \ (and other non allowed chars)
     folderName: z.string().min(1).max(50),
 });
 
-function AddFolderForm() {
+function AddFolderForm({path}: { path: string }) {
     const form = useForm<z.infer<typeof folderNameSchema>>({
         resolver: zodResolver(folderNameSchema),
         defaultValues: {
@@ -71,10 +72,18 @@ function AddFolderForm() {
     });
 
     function onSubmit(value: z.infer<typeof folderNameSchema>) {
+        const folderName = value.folderName;
+        let newPath = path + "/" + folderName; // TODO make proper path join
+
+        // remove potential trailing slash
+        if (newPath.startsWith("/")) {
+            newPath = newPath.slice(1);
+        }
+
         // Do something with the form values.
         // ✅ This will be type-safe and validated.
-        console.log(`Adding folder: ${value.folderName}`);
-        mutation.mutate(value.folderName);
+        console.log(`Adding path: ${newPath}`);
+        mutation.mutate(newPath);
     }
 
     return (
@@ -119,7 +128,7 @@ function AddPathDialog({path}: { path: string }) {
                         </code>
                     </DialogTitle>
                     <div className="flex flex-col gap-8 py-4">
-                        <AddFolderForm/>
+                        <AddFolderForm path={path}/>
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="file" className="text-left">
                                 File
@@ -180,8 +189,8 @@ function ModifyPathDialog({path}: { path: string }) {
 function FolderMenu({path}: { path: string }) {
     return (
         <div className="invisible flex flex-row items-center gap-1 group-hover:visible">
-            <AddPathDialog path={path} />
-            <ModifyPathDialog path={path}  />
+            <AddPathDialog path={path}/>
+            <ModifyPathDialog path={path}/>
         </div>
     );
 }
