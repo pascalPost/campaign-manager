@@ -59,6 +59,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FileTreePath"
+        400:
+          $ref: "#/components/responses/NonLocalPath"
         409:
           description: Path already exists
           content:
@@ -88,12 +90,10 @@ paths:
                 items:
                   $ref: "#/components/schemas/FileTreeEntry"
         400:
-          description: Non local Path
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-                example: "Non local Path."
+          $ref: "#/components/responses/NonLocalPath"
+        404:
+          $ref: "#/components/responses/PathNotFound"
+
     delete:
       summary: Delete path
       responses:
@@ -104,19 +104,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/FileTreePath"
         400:
-          description: Non local Path
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-                example: "Non local Path."
+          $ref: "#/components/responses/NonLocalPath"
         404:
-          description: Path not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-                example: "Path not found."
+          $ref: "#/components/responses/PathNotFound"
 
 
   /file/{filePath}:
@@ -128,7 +118,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/path/to/file (url encoding needed!)"
+            example: "path/to/file (url encoding needed!)"
       responses:
         200:
           description: Success
@@ -137,9 +127,9 @@ paths:
               schema:
                 type: string
         400:
-          description: No plain/text file requested
+          $ref: "#/components/responses/BadRequest"
         404:
-          description: Non-existing path
+          $ref: "#/components/responses/PathNotFound"
     put:
       summary: Update file
       parameters:
@@ -148,7 +138,7 @@ paths:
           required: true
           schema:
             type: string
-            example: "/path/to/file (url encoding needed!)"
+            example: "path/to/file (url encoding needed!)"
       requestBody:
         content:
           plain/text:
@@ -158,11 +148,33 @@ paths:
         200:
           description: Success
         400:
-          description: No plain/text file requested
+          $ref: "#/components/responses/BadRequest"
         404:
-          description: Non-existing path
+          $ref: "#/components/responses/PathNotFound"
 
 components:
+  responses:
+    NonLocalPath:
+      description: Non local path
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+            example: "Non local path."
+    PathNotFound:
+      description: Path not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+            example: "Path not found."
+    BadRequest:
+      description: Bad request ("Non local path." or "Not plain/text file.")
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+            example: "Not plain/text file."
   schemas:
     FileTreePath:
       required:

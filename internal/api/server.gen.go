@@ -38,6 +38,15 @@ type FileTreePath struct {
 	Path string `json:"path"`
 }
 
+// BadRequest defines model for BadRequest.
+type BadRequest = Error
+
+// NonLocalPath defines model for NonLocalPath.
+type NonLocalPath = Error
+
+// PathNotFound defines model for PathNotFound.
+type PathNotFound = Error
+
 // PostFileTreeJSONRequestBody defines body for PostFileTree for application/json ContentType.
 type PostFileTreeJSONRequestBody = FileTreeEntry
 
@@ -516,6 +525,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
+type BadRequestJSONResponse Error
+
+type NonLocalPathJSONResponse Error
+
+type PathNotFoundJSONResponse Error
+
 type GetFileFilePathRequestObject struct {
 	FilePath string `json:"filePath"`
 }
@@ -543,20 +558,22 @@ func (response GetFileFilePath200PlaintextResponse) VisitGetFileFilePathResponse
 	return err
 }
 
-type GetFileFilePath400Response struct {
-}
+type GetFileFilePath400JSONResponse struct{ BadRequestJSONResponse }
 
-func (response GetFileFilePath400Response) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
+func (response GetFileFilePath400JSONResponse) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetFileFilePath404Response struct {
-}
+type GetFileFilePath404JSONResponse struct{ PathNotFoundJSONResponse }
 
-func (response GetFileFilePath404Response) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
+func (response GetFileFilePath404JSONResponse) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PutFileFilePathRequestObject struct {
@@ -576,20 +593,22 @@ func (response PutFileFilePath200Response) VisitPutFileFilePathResponse(w http.R
 	return nil
 }
 
-type PutFileFilePath400Response struct {
-}
+type PutFileFilePath400JSONResponse struct{ BadRequestJSONResponse }
 
-func (response PutFileFilePath400Response) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
+func (response PutFileFilePath400JSONResponse) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type PutFileFilePath404Response struct {
-}
+type PutFileFilePath404JSONResponse struct{ PathNotFoundJSONResponse }
 
-func (response PutFileFilePath404Response) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
+func (response PutFileFilePath404JSONResponse) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetFileTreeRequestObject struct {
@@ -625,6 +644,15 @@ func (response PostFileTree201JSONResponse) VisitPostFileTreeResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostFileTree400JSONResponse struct{ NonLocalPathJSONResponse }
+
+func (response PostFileTree400JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PostFileTree409JSONResponse Error
 
 func (response PostFileTree409JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
@@ -651,7 +679,16 @@ func (response DeleteFileTreePath200JSONResponse) VisitDeleteFileTreePathRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DeleteFileTreePath404JSONResponse Error
+type DeleteFileTreePath400JSONResponse struct{ NonLocalPathJSONResponse }
+
+func (response DeleteFileTreePath400JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteFileTreePath404JSONResponse struct{ PathNotFoundJSONResponse }
 
 func (response DeleteFileTreePath404JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -673,6 +710,24 @@ type GetFileTreePath200JSONResponse []FileTreeEntry
 func (response GetFileTreePath200JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetFileTreePath400JSONResponse struct{ NonLocalPathJSONResponse }
+
+func (response GetFileTreePath400JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetFileTreePath404JSONResponse struct{ PathNotFoundJSONResponse }
+
+func (response GetFileTreePath404JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1070,19 +1125,20 @@ func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/8xWT08bPxD9Kv7Nr4dW2mZD4dK90QIVEq2ilp4QB3c9Caa7Y9f2AlG0370a7+bPhiWB",
-	"EiEuiWWP38y8eTPeGeSmtIaQgodsBj6/wlLG5bFzxvHCOmPRBY1xu0Tv5QR5GaYWIQMfnKYJ1HUCDv9U",
-	"2qGC7GJheFkncKILPHeIxxTc9D6m9kfarSD+MqZASVAnYGW44hO8k6Ut+JB30mDSsS4Qki1BxOtJ62A1",
-	"klGL2w1kF94ua97WNDaMpNDnTtugDUEGn2VppZ6Q+CpJTtCJ7+iDOBydDhhbh+hy3QgSuEHnG4ThYG8w",
-	"ZGKMRZJWQwb7g+FgHxqqYhYx2HTGv5xmzXsTDPzHyUoO5lRBBl8wMB8nrWHEcLLEgM5DdjEDTS0FkADJ",
-	"kqMbL42XqQdXYdKKp8tfukqgeFu5QiDlRmmaCEJUqP5718PrJaN7a8g3hfkwHPJfbiggxUxsITWlAe/C",
-	"Urd9oqyTtRr8qPIcvWcODxrU7vk3I5bYIobNiaIPqJpLB32X6D3eaR84r0gYO/ZVWUoWPByZWyqMVOvQ",
-	"UeJVT2lG1asuTeTjk1HTf61K3V/gV1Cqn1bJgG116qTpJh4Z29oo2mzVrbS20Hm8nF57jmiVJx2wjBff",
-	"OBxDBv+ny/mctsM57U7TelEi6ZycbpR8J9Ez7UMkwAtNwhkTohqN75Oj8d0cHxLA5vSekFWfRPZ27mzU",
-	"1P8eY7wvcodyoaSPO/PdPKwPOZWFQ6mmIkp0vWSHSgnC26VsF+JMZ3Y+6hUWGPB+DY/ififzZ6r1OQx3",
-	"evvghcglE8TYVKTWx3OkpqU12drlu+DuxTud4lhsGr75str2ntjHvyWPe0pKTWdIE/7G2ut5WFjPltcb",
-	"Bu2Iz5/wdoi55RoljCM8uht0TSNZZ64xb76CH3Q+t+kG0DNV54YbB+pj4BYdv0DkYIP0vzdGeh4NtoXZ",
-	"wGyMcSvQPEDGilP7bwAAAP//a8AKb1MMAAA=",
+	"H4sIAAAAAAAC/8xXTVPbMBD9K+q2B5jxxKFwqW9QoMMMZTKUnoCDam2CqC2pkgxkMv7vnZXzZcfEfKXl",
+	"wjjy7tvV2923ZgKpzo1WqLyDZAIWndHKYfhxwMU5/inQefqVauVRhUduTCZT7qVW8a3Tis5ceoM5p6dP",
+	"FoeQwMd4AR1Xb118ZK22UJZlBAJdaqUhEEgoFrNVMLZ1BWdasUynPGOG+5veFTBtGR17ZjIuVezxwbOh",
+	"zLB3BdtQRuRxSg4D7m82n249P4pPcc+0P9aFEpuPT9GY0p4NQzwymPoQZOWWTMBYbdB6WdUzR+f4COnR",
+	"jw1CAs5bqUbBnciXFgUkl3PD6zKCY5nhhUU8Ut6OVzGlO5R2CfGX1hlyRYyYaSXwgecmo5d0EnsdU90g",
+	"6kgiuEfTAMuZzCpcT+Qtol0HpqUaakKqM/6V54bLkWLfueIjtOycWnV/cNIjbOlDyKYRRHCH1lUI/d5O",
+	"r0/EaIOKGwkJ7Pb6vV2oqAq3CMnGE/pL1yzpbIShi+iyoYdOBCTwDT3xcTw1DBiW5+jROkguJyDVlAKI",
+	"QPGcshsujBdX97bAaKkd2/ljW4XNGKpUC6lGTCEKFB+2W2i9juoi8rnfb4zDYoDrg9BEWmn6H0WaonNE",
+	"4V6F2jY78+jxkn4Fl71ul9oUh6kq8pxT48OhvleZ5qIpQKHVi5YSDYr3XKLAy4EW45dWp2wv9Hsq2U8j",
+	"uMdplcqomi6SkK6xCjadjbxe16XH3HUJfF1dy3mtuLV8vHYGahc9lc6HTeSYVMxqHegz2rW1pXb1Oz7W",
+	"CS9fW41btfXKzpsHC2Pz2KpMLXKP4sl9WPuaCE5f/tFS55lFLsYMH6TzzTrvC8EU3k8/OpY7Op6Y2b4Q",
+	"mKHH1cIfhvMaXa9s8deU5bnKsFqRV8p5YGP++dalBm9B14YV4T8RGbRHofMoKgmqvv26Np3Z+Jaj8TD0",
+	"vEbsB/T+GYuMzSwbJBAOc2jv0FZzaay+xbT6p+rR4DObegItyj4zXCvqT4GbC8gckZL13P1em+lFMOhK",
+	"s4JZm2Mn0CxBwgqb428AAAD///c4wkSiDgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

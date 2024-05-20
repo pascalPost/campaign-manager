@@ -16,6 +16,18 @@ type FilesService struct {
 	Prefix string
 }
 
+const NonLocalPathMessage = "Non local path."
+const PathNotFoundMessage = "Path not found."
+const NotPlainTextFileMessage = "Not plain/text file."
+
+func nonLocalPathResponse() NonLocalPathJSONResponse {
+	return NonLocalPathJSONResponse{Message: NonLocalPathMessage}
+}
+
+func pathNotFoundResponse() PathNotFoundJSONResponse {
+	return PathNotFoundJSONResponse{Message: PathNotFoundMessage}
+}
+
 // isSavePath checks the given path to prevent path traversal attacks
 func isSavePath(path string) bool {
 	return filepath.IsLocal(path)
@@ -56,7 +68,7 @@ func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeReque
 
 func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error) {
 	if !isSavePath(request.Path) {
-		return nil, GetFileTreePath400JSONResponse
+		return GetFileTreePath400JSONResponse{nonLocalPathResponse()}, nil
 	}
 
 	result, err := getFileTree(s.Prefix, request.Path)
@@ -68,7 +80,7 @@ func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreeP
 
 func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
 	if !isSavePath(request.Body.Path) {
-		return nil, GetFileTreePath400JSONResponse
+		return PostFileTree400JSONResponse{nonLocalPathResponse()}, nil
 	}
 
 	reqPath := request.Body.Path
@@ -102,7 +114,7 @@ func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeReq
 
 func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
 	if !isSavePath(request.Path) {
-		return nil, GetFileTreePath400JSONResponse
+		return DeleteFileTreePath400JSONResponse{nonLocalPathResponse()}, nil
 	}
 
 	reqPath := filepath.Join(s.Prefix, request.Path)
@@ -110,9 +122,7 @@ func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFil
 	_, err := os.Stat(reqPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return DeleteFileTreePath404JSONResponse{
-				Message: "Path not found.",
-			}, nil
+			return DeleteFileTreePath404JSONResponse{pathNotFoundResponse()}, nil
 		}
 
 		return nil, err
@@ -135,7 +145,7 @@ func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFil
 
 func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error) {
 	if !isSavePath(request.FilePath) {
-		return nil, GetFileTreePath400JSONResponse
+		return GetFileFilePath400JSONResponse{BadRequestJSONResponse{NonLocalPathMessage}}, nil
 	}
 
 	filePath := filepath.Join(s.Prefix, request.FilePath)
@@ -143,8 +153,7 @@ func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFileP
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Error("GetFile", "filePath", filePath, "Path not exists response", http.StatusNotFound)
-			return GetFileFilePath404Response{}, nil
+			return GetFileFilePath404JSONResponse{pathNotFoundResponse()}, nil
 		}
 
 		slog.Error("GetFile", "filePath", filePath, "err", err)
@@ -152,8 +161,7 @@ func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFileP
 	}
 
 	if fileInfo.IsDir() {
-		slog.Error("GetFile", "filePath", filePath, "isDir response", http.StatusBadRequest)
-		return GetFileFilePath400Response{}, nil
+		return GetFileFilePath400JSONResponse{BadRequestJSONResponse{NotPlainTextFileMessage}}, nil
 	}
 
 	content, err := os.ReadFile(filePath)
@@ -164,7 +172,7 @@ func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFileP
 	fileType := http.DetectContentType(content)
 	if !strings.HasPrefix(fileType, "text/plain") {
 		slog.Error("GetFile", "filePath", filePath, "file type", fileType, "non plain/text file response", http.StatusBadRequest)
-		return GetFileFilePath400Response{}, nil
+		return GetFileFilePath400JSONResponse{BadRequestJSONResponse{NotPlainTextFileMessage}}, nil
 	}
 
 	slog.Debug("GetFile", "filePath", filePath, "response", http.StatusOK)
@@ -175,11 +183,7 @@ func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFileP
 
 func (s *FilesService) PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error) {
 	if !isSavePath(request.FilePath) {
-		return nil, GetFileTreePath400JSONResponse
-	}
-
-	if strings.Contains(request.FilePath, ".") {
-		return PutFileFilePath400Response{}, nil
+		return PutFileFilePath400JSONResponse{BadRequestJSONResponse{NonLocalPathMessage}}, nil
 	}
 
 	filePath := filepath.Join(s.Prefix, request.FilePath)
@@ -187,8 +191,7 @@ func (s *FilesService) PutFileFilePath(ctx context.Context, request PutFileFileP
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Error("GetFile", "filePath", filePath, "Path not exists response", http.StatusNotFound)
-			return PutFileFilePath404Response{}, nil
+			return PutFileFilePath404JSONResponse{pathNotFoundResponse()}, nil
 		}
 
 		slog.Error("PutFile", "filePath", filePath, "err", err)
@@ -197,7 +200,7 @@ func (s *FilesService) PutFileFilePath(ctx context.Context, request PutFileFileP
 
 	if fileInfo.IsDir() {
 		slog.Error("PutFile", "filePath", filePath, "isDir response", http.StatusBadRequest)
-		return PutFileFilePath400Response{}, nil
+		return PutFileFilePath400JSONResponse{BadRequestJSONResponse{NotPlainTextFileMessage}}, nil
 	}
 
 	body, err := io.ReadAll(request.Body)

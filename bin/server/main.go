@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+
+	// TODO set this based on env variable
 	addr := "localhost:3000"
 
 	swagger, err := api.GetSwagger()
@@ -34,6 +36,7 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	// TODO activate this
 	//r.Use(nethttpmiddleware.OapiRequestValidator(swagger))
 
 	// TODO read this from config
