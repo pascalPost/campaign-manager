@@ -1,27 +1,29 @@
 # campaign-manager
 
+campaign-manager is a project designed to manage computation campaigns (execution of a lot of potentially
+compute intensive, long-running tasks) with a user-friendly frontend for creating, editing, monitoring and interaction.
+The campaigns can be generated based on Go templates and YAML-based configuration files.
 
-To create a program that runs a lot of computations while providing a nice frontend for the user to monitor the status and interact
+## Project Structure
 
-Manage computation campaigns (execution of a lot of jobs)
+The project consists of two main building blocks:
 
-Nice frontend
-
-Project to manage campaigns based on go templates and a YAML based configuration file.
-The project is based on the [Wails](https://wails.io) framework and offers a web interface.
-The backend is written in Go.
+1. File explorer and file editing
+2. Launch and managing of computations via workload manager
 
 ## Architecture
 
-### Overview
+The architecture of the project is as follows:
+
+```plaintext
                    +--------------------------+
                    |                          |
                    |         Frontend         |
                    |         (React)          |
-                   |          Wails           |
+                   |                          |
                    +------------+-------------+
                                 |
-                                | HTTP Requests (REST or RPC)
+                                | HTTP Requests (REST API)
                                 |
                    +------------v-------------+
                    |                          |
@@ -38,37 +40,33 @@ The backend is written in Go.
                    |     Computing Cluster    |
                    |                          |
                    +--------------------------+
+```
 
 ### Backend
 
-For server development: use air to update (re-build) on change
+The backend is written in Go and uses [oapi-codegen](https://github.com/deepmap/oapi-codegen) to generate REST API
+boilerplate from `./api/openapi.yaml`.
+The router used is chi (https://github.com/go-chi/chi).
+
+#### Development
+
+For auto-update (re-build) on change, you can use air, running (
+after [installation](https://github.com/cosmtrek/air#installation))
 ```shell
 air
 ```
-The REST API is available at http://localhost:3000/api/v1.
+The air setup will also run the restapi code generation, which can be also run manually
+```shell
+go generate ./...
+```
 
-Router: chi (https://github.com/go-chi/chi)
+### Frontend
 
-To create a type safe api, openapi (swagger) is used to document the api.
-This is done from the go backend with swag (https://github.com/swaggo/swag)
-and http-swagger (https://github.com/swaggo/http-swagger) for chi.
+The frontend is built with React based on the shadcn-ui components and communicates with the backend through HTTP
+requests (REST API).
+The calls are generate based on the OpenAPI documentation `./api/openapi.yaml`.
+The frontend is a git submodule of https://github.com/pascalPost/campaign-manager-frontend.git.
 
-## Dependencies
-- [Wails](https://wails.io)
+#### Development
 
-## Wails
-
-### About
-
-[Wails template for Nextjs with app router](https://github.com/thisisvk-in/wails-template-nextjs-app-router).
-For more details [Nextjs-Template](https://github.com/thisisvk-in/wails-template-nextjs-app-router).
-
-### Live Development
-
-To run in live development mode, run `wails dev` in the project directory. In another terminal, go into the `frontend`
-directory and run `npm run dev`. The frontend dev server will run on http://localhost:3000. Connect to this in your
-browser and connect to your application.
-
-### Building
-
-To build a redistributable, production mode package, use `wails build`. Static asset directory will be `frontend/dist`.
+The dev server can be started with `pnpm run dev`.
