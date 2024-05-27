@@ -77,7 +77,7 @@ paths:
         allowReserved: false
         schema:
           type: string
-          example: "path/to/file (url encoding needed!)"
+          example: "/path/to/file (url encoding needed!)"
     get:
       summary: List nested paths
       responses:
@@ -182,7 +182,7 @@ components:
       properties:
         path:
           type: string
-          example: "path/to/file"
+          example: "/path/to/file"
     FileTreeEntry:
       required:
         - path
@@ -190,7 +190,7 @@ components:
       properties:
         path:
           type: string
-          example: "path/to/file"
+          example: "/path/to/file"
         isDir:
           type: boolean
     Error:

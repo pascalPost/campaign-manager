@@ -33,6 +33,11 @@ func isSavePath(path string) bool {
 	return filepath.IsLocal(path)
 }
 
+// normalizePath transforms the abs. or rel. path into a relative path
+func normalizePath(path string) string {
+	return filepath.Clean(filepath.Join("./", path))
+}
+
 func NewFilesService(prefix string) *FilesService {
 	return &FilesService{
 		Prefix: prefix,
@@ -50,7 +55,7 @@ func getFileTree(prefix string, filePath string) ([]FileTreeEntry, error) {
 	result := make([]FileTreeEntry, 0, len(files))
 	for _, f := range files {
 		result = append(result, FileTreeEntry{
-			Path:  f.Name(),
+			Path:  filepath.Join("/", filePath, f.Name()),
 			IsDir: f.IsDir(),
 		})
 	}
@@ -67,11 +72,12 @@ func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeReque
 }
 
 func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error) {
-	if !isSavePath(request.Path) {
+	reqPath := normalizePath(request.Path)
+	if !isSavePath(reqPath) {
 		return GetFileTreePath400JSONResponse{nonLocalPathResponse()}, nil
 	}
 
-	result, err := getFileTree(s.Prefix, request.Path)
+	result, err := getFileTree(s.Prefix, reqPath)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +85,10 @@ func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreeP
 }
 
 func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
-	if !isSavePath(request.Body.Path) {
+	reqPath := normalizePath(request.Body.Path)
+	if !isSavePath(reqPath) {
 		return PostFileTree400JSONResponse{nonLocalPathResponse()}, nil
 	}
-
-	reqPath := request.Body.Path
 
 	name := path.Join(s.Prefix, reqPath)
 	isDir := request.Body.IsDir
@@ -108,16 +113,17 @@ func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeReq
 	}
 
 	return PostFileTree201JSONResponse{
-		Path: reqPath,
+		Path: filepath.Join("/", reqPath),
 	}, nil
 }
 
 func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
-	if !isSavePath(request.Path) {
+	normPath := normalizePath(request.Path)
+	if !isSavePath(normPath) {
 		return DeleteFileTreePath400JSONResponse{nonLocalPathResponse()}, nil
 	}
 
-	reqPath := filepath.Join(s.Prefix, request.Path)
+	reqPath := filepath.Join(s.Prefix, normPath)
 
 	_, err := os.Stat(reqPath)
 	if err != nil {
@@ -134,7 +140,7 @@ func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFil
 	}
 
 	return DeleteFileTreePath200JSONResponse{
-		Path: request.Path,
+		Path: filepath.Join("/", request.Path),
 	}, nil
 }
 

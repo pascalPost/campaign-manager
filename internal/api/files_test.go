@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -53,10 +54,10 @@ func TestGetFileTree(t *testing.T) {
 
 				assert.Equal(t, 2, len(fileTreeEntry))
 
-				assert.Equal(t, "dir", fileTreeEntry[0].Path)
+				assert.Equal(t, "/dir", fileTreeEntry[0].Path)
 				assert.Equal(t, true, fileTreeEntry[0].IsDir)
 
-				assert.Equal(t, "test.txt", fileTreeEntry[1].Path)
+				assert.Equal(t, "/test.txt", fileTreeEntry[1].Path)
 				assert.Equal(t, false, fileTreeEntry[1].IsDir)
 			},
 		},
@@ -76,11 +77,54 @@ func TestGetFileTree(t *testing.T) {
 				err := json.NewDecoder(rr.Body).Decode(&fileTreeEntry)
 				assert.NoError(t, err)
 
+				assert.Equal(t, 2, len(fileTreeEntry))
+
+				assert.Equal(t, "/dir/nestedDir", fileTreeEntry[0].Path)
+				assert.Equal(t, true, fileTreeEntry[0].IsDir)
+				assert.Equal(t, "/dir/test_nested.txt", fileTreeEntry[1].Path)
+				assert.Equal(t, false, fileTreeEntry[1].IsDir)
+			},
+		},
+		{
+			description:        "check absolute root path (with url encoding)",
+			url:                "/fileTree/" + url.PathEscape("/"),
+			expectedStatusCode: http.StatusOK,
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var fileTreeEntry []FileTreeEntry
+
+				err := json.NewDecoder(rr.Body).Decode(&fileTreeEntry)
+				assert.NoError(t, err)
+
+				assert.Equal(t, 2, len(fileTreeEntry))
+
+				assert.Equal(t, "/dir", fileTreeEntry[0].Path)
+				assert.Equal(t, true, fileTreeEntry[0].IsDir)
+
+				assert.Equal(t, "/test.txt", fileTreeEntry[1].Path)
+				assert.Equal(t, false, fileTreeEntry[1].IsDir)
+			},
+		},
+		{
+			description:        "check deeply nested folder content",
+			url:                "/fileTree/" + url.PathEscape("/dir/nestedDir"),
+			expectedStatusCode: http.StatusOK,
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var fileTreeEntry []FileTreeEntry
+
+				err := json.NewDecoder(rr.Body).Decode(&fileTreeEntry)
+				assert.NoError(t, err)
+
 				assert.Equal(t, 1, len(fileTreeEntry))
 
-				assert.Equal(t, "test_nested.txt", fileTreeEntry[0].Path)
+				assert.Equal(t, "/dir/nestedDir/test.txt", fileTreeEntry[0].Path)
 				assert.Equal(t, false, fileTreeEntry[0].IsDir)
 			},
+		},
+		{
+			description:        "check deeply nested folder content without encoded path",
+			url:                "/fileTree/dir/nestedDir",
+			expectedStatusCode: http.StatusNotFound,
+			checks:             func(t *testing.T, rr *httptest.ResponseRecorder) {},
 		},
 	}
 
@@ -94,6 +138,12 @@ func TestGetFileTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = os.WriteFile(path.Join(prefix, "dir/test_nested.txt"), []byte("test2"), 0o644)
+	assert.NoError(t, err)
+
+	err = os.MkdirAll(path.Join(prefix, "dir/nestedDir"), 0o777)
+	assert.NoError(t, err)
+
+	err = os.WriteFile(path.Join(prefix, "dir/nestedDir/test.txt"), []byte(""), 0o644)
 	assert.NoError(t, err)
 
 	server := NewServer(prefix)
@@ -132,7 +182,7 @@ func TestPostFileTree(t *testing.T) {
 				res := PostFileTree201JSONResponse{}
 				err := json.NewDecoder(rr.Body).Decode(&res)
 				assert.NoError(t, err)
-				assert.Equal(t, "test", res.Path)
+				assert.Equal(t, "/test", res.Path)
 			},
 		},
 		{
@@ -147,7 +197,7 @@ func TestPostFileTree(t *testing.T) {
 				res := PostFileTree201JSONResponse{}
 				err := json.NewDecoder(rr.Body).Decode(&res)
 				assert.NoError(t, err)
-				assert.Equal(t, "test.txt", res.Path)
+				assert.Equal(t, "/test.txt", res.Path)
 			},
 		},
 		{
@@ -177,22 +227,25 @@ func TestPostFileTree(t *testing.T) {
 				res := PostFileTree201JSONResponse{}
 				err := json.NewDecoder(rr.Body).Decode(&res)
 				assert.NoError(t, err)
-				assert.Equal(t, "test/test.txt", res.Path)
+				assert.Equal(t, "/test/test.txt", res.Path)
 			},
 		},
-		//{
-		//	description: "New folder creation including points in path",
-		//	requestBody: PostFileTreeJSONRequestBody{
-		//		IsDir: true,
-		//		Path:  "test/../../outOfRoot",
-		//	},
-		//	checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
-		//		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		//	},
-		//},
-	}
+		{
+			description: "New folder creation with an absolute path",
+			requestBody: PostFileTreeJSONRequestBody{
+				IsDir: true,
+				Path:  "/test_abs",
+			},
+			checks: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(t, http.StatusCreated, rr.Code)
 
-	// TODO check if specified path is local!
+				res := PostFileTree201JSONResponse{}
+				err := json.NewDecoder(rr.Body).Decode(&res)
+				assert.NoError(t, err)
+				assert.Equal(t, "/test_abs", res.Path)
+			},
+		},
+	}
 
 	prefix := t.TempDir()
 
@@ -219,7 +272,7 @@ func TestPostFileTree(t *testing.T) {
 
 	files, err := os.ReadDir(prefix)
 	assert.NoError(t, err)
-	assert.Equal(t, 3, len(files))
+	assert.Equal(t, 4, len(files))
 
 	assert.Equal(t, "dir", files[0].Name())
 	assert.Equal(t, true, files[0].IsDir())
@@ -229,6 +282,9 @@ func TestPostFileTree(t *testing.T) {
 
 	assert.Equal(t, "test.txt", files[2].Name())
 	assert.Equal(t, false, files[2].IsDir())
+
+	assert.Equal(t, "test_abs", files[3].Name())
+	assert.Equal(t, true, files[3].IsDir())
 }
 
 func TestDeleteFileTree(t *testing.T) {
@@ -255,7 +311,7 @@ func TestDeleteFileTree(t *testing.T) {
 			url: "/fileTree/test",
 			checks: func(t *testing.T, rr *httptest.ResponseRecorder, prefix string) {
 				assert.Equal(t, http.StatusOK, rr.Code)
-				assert.JSONEq(t, `{"path" : "test"}`, rr.Body.String())
+				assert.JSONEq(t, `{"path" : "/test"}`, rr.Body.String())
 
 				files, err := os.ReadDir(prefix)
 				assert.NoError(t, err)
@@ -279,7 +335,7 @@ func TestDeleteFileTree(t *testing.T) {
 			url: "/fileTree/test.txt",
 			checks: func(t *testing.T, rr *httptest.ResponseRecorder, prefix string) {
 				assert.Equal(t, http.StatusOK, rr.Code)
-				assert.JSONEq(t, `{"path" : "test.txt"}`, rr.Body.String())
+				assert.JSONEq(t, `{"path" : "/test.txt"}`, rr.Body.String())
 
 				files, err := os.ReadDir(prefix)
 				assert.NoError(t, err)
