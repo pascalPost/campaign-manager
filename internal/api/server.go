@@ -5,16 +5,12 @@ package api
 import "context"
 
 type Server struct {
-	*FilesService
 }
 
 var _ StrictServerInterface = (*Server)(nil)
 
-func NewServer(prefix string) *Server {
-	filesService := NewFilesService(prefix)
-	return &Server{
-		FilesService: filesService,
-	}
+func NewServer() *Server {
+	return &Server{}
 }
 
 // Ping server
@@ -35,14 +31,14 @@ func (s *Server) PostProjects(ctx context.Context, request PostProjectsRequestOb
 	return nil, nil
 }
 
-// List tasks
-// (GET /tasks)
-func (s *Server) GetTasks(ctx context.Context, request GetTasksRequestObject) (GetTasksResponseObject, error) {
+// List jobs
+// (GET /jobs)
+func (s *Server) GetJobs(ctx context.Context, request GetJobsRequestObject) (GetJobsResponseObject, error) {
 	return nil, nil
 }
 
-// Add new task
-// (POST /tasks)
-func (s *Server) PostTasks(ctx context.Context, request PostTasksRequestObject) (PostTasksResponseObject, error) {
+// Add new job
+// (POST /jobs)
+func (s *Server) PostJobs(ctx context.Context, request PostJobsRequestObject) (PostJobsResponseObject, error) {
 	return nil, nil
 }

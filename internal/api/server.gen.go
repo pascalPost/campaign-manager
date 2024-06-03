@@ -8,9 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,58 +16,17 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
-	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
-// Error defines model for Error.
-type Error struct {
-	Message string `json:"message"`
-}
-
-// FileTreeEntry defines model for FileTreeEntry.
-type FileTreeEntry struct {
-	IsDir bool   `json:"isDir"`
-	Path  string `json:"path"`
-}
-
-// FileTreePath defines model for FileTreePath.
-type FileTreePath struct {
-	Path string `json:"path"`
-}
-
-// BadRequest defines model for BadRequest.
-type BadRequest = Error
-
-// NonLocalPath defines model for NonLocalPath.
-type NonLocalPath = Error
-
-// PathNotFound defines model for PathNotFound.
-type PathNotFound = Error
-
-// PostFileTreeJSONRequestBody defines body for PostFileTree for application/json ContentType.
-type PostFileTreeJSONRequestBody = FileTreeEntry
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Download plain/text file
-	// (GET /file/{filePath})
-	GetFileFilePath(w http.ResponseWriter, r *http.Request, filePath string)
-	// Update file
-	// (PUT /file/{filePath})
-	PutFileFilePath(w http.ResponseWriter, r *http.Request, filePath string)
-	// List paths in root
-	// (GET /fileTree)
-	GetFileTree(w http.ResponseWriter, r *http.Request)
-	// Add new path
-	// (POST /fileTree)
-	PostFileTree(w http.ResponseWriter, r *http.Request)
-	// Delete path
-	// (DELETE /fileTree/{path})
-	DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string)
-	// List nested paths
-	// (GET /fileTree/{path})
-	GetFileTreePath(w http.ResponseWriter, r *http.Request, path string)
+	// List jobs
+	// (GET /jobs)
+	GetJobs(w http.ResponseWriter, r *http.Request)
+	// Add new job
+	// (POST /jobs)
+	PostJobs(w http.ResponseWriter, r *http.Request)
 	// Ping server
 	// (GET /ping)
 	GetPing(w http.ResponseWriter, r *http.Request)
@@ -79,51 +36,21 @@ type ServerInterface interface {
 	// Add new projects
 	// (POST /projects)
 	PostProjects(w http.ResponseWriter, r *http.Request)
-	// List tasks
-	// (GET /tasks)
-	GetTasks(w http.ResponseWriter, r *http.Request)
-	// Add new task
-	// (POST /tasks)
-	PostTasks(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
-// Download plain/text file
-// (GET /file/{filePath})
-func (_ Unimplemented) GetFileFilePath(w http.ResponseWriter, r *http.Request, filePath string) {
+// List jobs
+// (GET /jobs)
+func (_ Unimplemented) GetJobs(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update file
-// (PUT /file/{filePath})
-func (_ Unimplemented) PutFileFilePath(w http.ResponseWriter, r *http.Request, filePath string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// List paths in root
-// (GET /fileTree)
-func (_ Unimplemented) GetFileTree(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Add new path
-// (POST /fileTree)
-func (_ Unimplemented) PostFileTree(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Delete path
-// (DELETE /fileTree/{path})
-func (_ Unimplemented) DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// List nested paths
-// (GET /fileTree/{path})
-func (_ Unimplemented) GetFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
+// Add new job
+// (POST /jobs)
+func (_ Unimplemented) PostJobs(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -145,18 +72,6 @@ func (_ Unimplemented) PostProjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List tasks
-// (GET /tasks)
-func (_ Unimplemented) GetTasks(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Add new task
-// (POST /tasks)
-func (_ Unimplemented) PostTasks(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -166,23 +81,12 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetFileFilePath operation middleware
-func (siw *ServerInterfaceWrapper) GetFileFilePath(w http.ResponseWriter, r *http.Request) {
+// GetJobs operation middleware
+func (siw *ServerInterfaceWrapper) GetJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var err error
-
-	// ------------- Path parameter "filePath" -------------
-	var filePath string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "filePath", chi.URLParam(r, "filePath"), &filePath, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filePath", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFileFilePath(w, r, filePath)
+		siw.Handler.GetJobs(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -192,105 +96,12 @@ func (siw *ServerInterfaceWrapper) GetFileFilePath(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// PutFileFilePath operation middleware
-func (siw *ServerInterfaceWrapper) PutFileFilePath(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "filePath" -------------
-	var filePath string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "filePath", chi.URLParam(r, "filePath"), &filePath, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filePath", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PutFileFilePath(w, r, filePath)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// GetFileTree operation middleware
-func (siw *ServerInterfaceWrapper) GetFileTree(w http.ResponseWriter, r *http.Request) {
+// PostJobs operation middleware
+func (siw *ServerInterfaceWrapper) PostJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFileTree(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// PostFileTree operation middleware
-func (siw *ServerInterfaceWrapper) PostFileTree(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostFileTree(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// DeleteFileTreePath operation middleware
-func (siw *ServerInterfaceWrapper) DeleteFileTreePath(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "path" -------------
-	var path string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "path", chi.URLParam(r, "path"), &path, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteFileTreePath(w, r, path)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// GetFileTreePath operation middleware
-func (siw *ServerInterfaceWrapper) GetFileTreePath(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "path" -------------
-	var path string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "path", chi.URLParam(r, "path"), &path, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFileTreePath(w, r, path)
+		siw.Handler.PostJobs(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -336,36 +147,6 @@ func (siw *ServerInterfaceWrapper) PostProjects(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostProjects(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// GetTasks operation middleware
-func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTasks(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// PostTasks operation middleware
-func (siw *ServerInterfaceWrapper) PostTasks(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostTasks(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -489,22 +270,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/file/{filePath}", wrapper.GetFileFilePath)
+		r.Get(options.BaseURL+"/jobs", wrapper.GetJobs)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/file/{filePath}", wrapper.PutFileFilePath)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/fileTree", wrapper.GetFileTree)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/fileTree", wrapper.PostFileTree)
-	})
-	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/fileTree/{path}", wrapper.DeleteFileTreePath)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/fileTree/{path}", wrapper.GetFileTreePath)
+		r.Post(options.BaseURL+"/jobs", wrapper.PostJobs)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/ping", wrapper.GetPing)
@@ -515,221 +284,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/projects", wrapper.PostProjects)
 	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/tasks", wrapper.GetTasks)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/tasks", wrapper.PostTasks)
-	})
 
 	return r
 }
 
-type BadRequestJSONResponse Error
-
-type NonLocalPathJSONResponse Error
-
-type PathNotFoundJSONResponse Error
-
-type GetFileFilePathRequestObject struct {
-	FilePath string `json:"filePath"`
+type GetJobsRequestObject struct {
 }
 
-type GetFileFilePathResponseObject interface {
-	VisitGetFileFilePathResponse(w http.ResponseWriter) error
+type GetJobsResponseObject interface {
+	VisitGetJobsResponse(w http.ResponseWriter) error
 }
 
-type GetFileFilePath200PlaintextResponse struct {
-	Body          io.Reader
-	ContentLength int64
+type PostJobsRequestObject struct {
 }
 
-func (response GetFileFilePath200PlaintextResponse) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "plain/text")
-	if response.ContentLength != 0 {
-		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
-	}
-	w.WriteHeader(200)
-
-	if closer, ok := response.Body.(io.ReadCloser); ok {
-		defer closer.Close()
-	}
-	_, err := io.Copy(w, response.Body)
-	return err
-}
-
-type GetFileFilePath400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response GetFileFilePath400JSONResponse) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetFileFilePath404JSONResponse struct{ PathNotFoundJSONResponse }
-
-func (response GetFileFilePath404JSONResponse) VisitGetFileFilePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PutFileFilePathRequestObject struct {
-	FilePath string `json:"filePath"`
-	Body     io.Reader
-}
-
-type PutFileFilePathResponseObject interface {
-	VisitPutFileFilePathResponse(w http.ResponseWriter) error
-}
-
-type PutFileFilePath200Response struct {
-}
-
-func (response PutFileFilePath200Response) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type PutFileFilePath400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response PutFileFilePath400JSONResponse) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PutFileFilePath404JSONResponse struct{ PathNotFoundJSONResponse }
-
-func (response PutFileFilePath404JSONResponse) VisitPutFileFilePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetFileTreeRequestObject struct {
-}
-
-type GetFileTreeResponseObject interface {
-	VisitGetFileTreeResponse(w http.ResponseWriter) error
-}
-
-type GetFileTree200JSONResponse []FileTreeEntry
-
-func (response GetFileTree200JSONResponse) VisitGetFileTreeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PostFileTreeRequestObject struct {
-	Body *PostFileTreeJSONRequestBody
-}
-
-type PostFileTreeResponseObject interface {
-	VisitPostFileTreeResponse(w http.ResponseWriter) error
-}
-
-type PostFileTree201JSONResponse FileTreePath
-
-func (response PostFileTree201JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PostFileTree400JSONResponse struct{ NonLocalPathJSONResponse }
-
-func (response PostFileTree400JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PostFileTree409JSONResponse Error
-
-func (response PostFileTree409JSONResponse) VisitPostFileTreeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteFileTreePathRequestObject struct {
-	Path string `json:"path"`
-}
-
-type DeleteFileTreePathResponseObject interface {
-	VisitDeleteFileTreePathResponse(w http.ResponseWriter) error
-}
-
-type DeleteFileTreePath200JSONResponse FileTreePath
-
-func (response DeleteFileTreePath200JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteFileTreePath400JSONResponse struct{ NonLocalPathJSONResponse }
-
-func (response DeleteFileTreePath400JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteFileTreePath404JSONResponse struct{ PathNotFoundJSONResponse }
-
-func (response DeleteFileTreePath404JSONResponse) VisitDeleteFileTreePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetFileTreePathRequestObject struct {
-	Path string `json:"path"`
-}
-
-type GetFileTreePathResponseObject interface {
-	VisitGetFileTreePathResponse(w http.ResponseWriter) error
-}
-
-type GetFileTreePath200JSONResponse []FileTreeEntry
-
-func (response GetFileTreePath200JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetFileTreePath400JSONResponse struct{ NonLocalPathJSONResponse }
-
-func (response GetFileTreePath400JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetFileTreePath404JSONResponse struct{ PathNotFoundJSONResponse }
-
-func (response GetFileTreePath404JSONResponse) VisitGetFileTreePathResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
+type PostJobsResponseObject interface {
+	VisitPostJobsResponse(w http.ResponseWriter) error
 }
 
 type GetPingRequestObject struct {
@@ -761,40 +331,14 @@ type PostProjectsResponseObject interface {
 	VisitPostProjectsResponse(w http.ResponseWriter) error
 }
 
-type GetTasksRequestObject struct {
-}
-
-type GetTasksResponseObject interface {
-	VisitGetTasksResponse(w http.ResponseWriter) error
-}
-
-type PostTasksRequestObject struct {
-}
-
-type PostTasksResponseObject interface {
-	VisitPostTasksResponse(w http.ResponseWriter) error
-}
-
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Download plain/text file
-	// (GET /file/{filePath})
-	GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error)
-	// Update file
-	// (PUT /file/{filePath})
-	PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error)
-	// List paths in root
-	// (GET /fileTree)
-	GetFileTree(ctx context.Context, request GetFileTreeRequestObject) (GetFileTreeResponseObject, error)
-	// Add new path
-	// (POST /fileTree)
-	PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error)
-	// Delete path
-	// (DELETE /fileTree/{path})
-	DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error)
-	// List nested paths
-	// (GET /fileTree/{path})
-	GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error)
+	// List jobs
+	// (GET /jobs)
+	GetJobs(ctx context.Context, request GetJobsRequestObject) (GetJobsResponseObject, error)
+	// Add new job
+	// (POST /jobs)
+	PostJobs(ctx context.Context, request PostJobsRequestObject) (PostJobsResponseObject, error)
 	// Ping server
 	// (GET /ping)
 	GetPing(ctx context.Context, request GetPingRequestObject) (GetPingResponseObject, error)
@@ -804,12 +348,6 @@ type StrictServerInterface interface {
 	// Add new projects
 	// (POST /projects)
 	PostProjects(ctx context.Context, request PostProjectsRequestObject) (PostProjectsResponseObject, error)
-	// List tasks
-	// (GET /tasks)
-	GetTasks(ctx context.Context, request GetTasksRequestObject) (GetTasksResponseObject, error)
-	// Add new task
-	// (POST /tasks)
-	PostTasks(ctx context.Context, request PostTasksRequestObject) (PostTasksResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -841,25 +379,23 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// GetFileFilePath operation middleware
-func (sh *strictHandler) GetFileFilePath(w http.ResponseWriter, r *http.Request, filePath string) {
-	var request GetFileFilePathRequestObject
-
-	request.FilePath = filePath
+// GetJobs operation middleware
+func (sh *strictHandler) GetJobs(w http.ResponseWriter, r *http.Request) {
+	var request GetJobsRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetFileFilePath(ctx, request.(GetFileFilePathRequestObject))
+		return sh.ssi.GetJobs(ctx, request.(GetJobsRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetFileFilePath")
+		handler = middleware(handler, "GetJobs")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetFileFilePathResponseObject); ok {
-		if err := validResponse.VisitGetFileFilePathResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetJobsResponseObject); ok {
+		if err := validResponse.VisitGetJobsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -867,134 +403,23 @@ func (sh *strictHandler) GetFileFilePath(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// PutFileFilePath operation middleware
-func (sh *strictHandler) PutFileFilePath(w http.ResponseWriter, r *http.Request, filePath string) {
-	var request PutFileFilePathRequestObject
-
-	request.FilePath = filePath
-
-	request.Body = r.Body
+// PostJobs operation middleware
+func (sh *strictHandler) PostJobs(w http.ResponseWriter, r *http.Request) {
+	var request PostJobsRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PutFileFilePath(ctx, request.(PutFileFilePathRequestObject))
+		return sh.ssi.PostJobs(ctx, request.(PostJobsRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PutFileFilePath")
+		handler = middleware(handler, "PostJobs")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PutFileFilePathResponseObject); ok {
-		if err := validResponse.VisitPutFileFilePathResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetFileTree operation middleware
-func (sh *strictHandler) GetFileTree(w http.ResponseWriter, r *http.Request) {
-	var request GetFileTreeRequestObject
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetFileTree(ctx, request.(GetFileTreeRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetFileTree")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetFileTreeResponseObject); ok {
-		if err := validResponse.VisitGetFileTreeResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// PostFileTree operation middleware
-func (sh *strictHandler) PostFileTree(w http.ResponseWriter, r *http.Request) {
-	var request PostFileTreeRequestObject
-
-	var body PostFileTreeJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostFileTree(ctx, request.(PostFileTreeRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostFileTree")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostFileTreeResponseObject); ok {
-		if err := validResponse.VisitPostFileTreeResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// DeleteFileTreePath operation middleware
-func (sh *strictHandler) DeleteFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
-	var request DeleteFileTreePathRequestObject
-
-	request.Path = path
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteFileTreePath(ctx, request.(DeleteFileTreePathRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteFileTreePath")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DeleteFileTreePathResponseObject); ok {
-		if err := validResponse.VisitDeleteFileTreePathResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetFileTreePath operation middleware
-func (sh *strictHandler) GetFileTreePath(w http.ResponseWriter, r *http.Request, path string) {
-	var request GetFileTreePathRequestObject
-
-	request.Path = path
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetFileTreePath(ctx, request.(GetFileTreePathRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetFileTreePath")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetFileTreePathResponseObject); ok {
-		if err := validResponse.VisitGetFileTreePathResponse(w); err != nil {
+	} else if validResponse, ok := response.(PostJobsResponseObject); ok {
+		if err := validResponse.VisitPostJobsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1074,71 +499,14 @@ func (sh *strictHandler) PostProjects(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetTasks operation middleware
-func (sh *strictHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	var request GetTasksRequestObject
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetTasks(ctx, request.(GetTasksRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetTasks")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetTasksResponseObject); ok {
-		if err := validResponse.VisitGetTasksResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// PostTasks operation middleware
-func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
-	var request PostTasksRequestObject
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostTasks(ctx, request.(PostTasksRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostTasks")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostTasksResponseObject); ok {
-		if err := validResponse.VisitPostTasksResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/8xXXU/cOhD9K76+9wGkaLNceGneoECFRNGK0ifgwY1nF9PEdscOsFrlv1fjZD+SDRs+",
-	"W15Q1pk5Mz4zcybMeGpyazRo73gy4wjOGu0g/DgQ8hx+FeA8/UqN9qDDo7A2U6nwyuj41hlNZy69gVzQ",
-	"038IY57wf+MldFy9dfERokFelmXEJbgUlSUQnlAshlUwtnXFz4xmmUlFxqzwN4MrzgwyOvbMZkLp2MOD",
-	"Z2OVweCKb/MyIo9TchgJf/P+6Tbzo/gU98z4Y1No+f7xKRrTxrNxiEcGtQ9BVm7JjFs0FtCrqp45OCcm",
-	"QI9+aoEn3HlUehLciXyFIHlyuTC8LiN+rDK4QIAj7XG6jqncocIVxB/GZCA0MWLrSsCDyG1GL2M6ir2J",
-	"qXA86ski+Ed1hNVU5iVuZvIm4a4D10qPDUE1Of8scivURLOvQosJIDunZt0fnQwIW/kQs23EI34H6CqE",
-	"4WBnMCRqjAUtrOIJ3x0MB7u8IitcIyQbz+gv3bOkswmEPqLbhi46kTzhX8ATIce1YcBAkYMHdDy5nHFF",
-	"IWsStcgpu/HSeHl1jwVEKw25JHCVP7ZVYMZAp0YqPWEaQIL8Z7uD1uuoKSP/D4etgViOcHMU2khrbf+t",
-	"SFNwjijcq1C7pmcRPV5RsOCy1+/SmOMwV0WeC2p9fmjudWaEbEtQaPaio0Sj4iOXKPByYOT0pdUpuwv9",
-	"kUr23Urhoa5SGVXTRRrSN1bBpreRNyu78pC7Polv6mu5qJVAFNONM9C46KlyPuwix5RmaEygzxrX1ZbG",
-	"Ne/4WCe8fHG1btXVKztvHiyMzWPLMkUQHuST+7DxPRGcPv2htS4yBCGnDB6U8+0670vJNNzXnx2rHR3P",
-	"7HxfSMjAw3rhD8N5g65XtvhryvJcZVivyCvlPLCx+IDrU4O3oOudFeEvERm0R4PzICsJqr7++jadffqW",
-	"i1+45mg+LD1vUPsRvX/GJmNzyxYLhMMc4B1gNZgWzS2k1f9Vjwaf2zQT6JD2ueFGVX8K3EJBFoiUrBfu",
-	"58ZML4JBX5oVzMYce4HmCRJWWB2/AwAA//8BqwCzpQ4AAA==",
+	"H4sIAAAAAAAC/4zQwUoDMRAG4FcJ/zlso73lVjxIRWHRJ4i745riJiEzrUjJu0tW1yKWracE5ueb4T/C",
+	"h5cIe0RP3GWfxMcAixs3JueHoB5ccANl9UgsatNuG2iIlzc6E4LGgTJ/Caa5agyKRkwUXPKwWDemWUMj",
+	"OXnlunO1i8/TZyCpT0yUXb1g28PiluSuzjUycYqBqWaLBu/H0eUPWNx7FjUhRSNFPqO0kS8ym75Xgd6r",
+	"hFI0VsmHYemuts5/g7g25m+PT/uuI2Y1Jyf+tLg6iikfKH8vznFHnSyW0s6ZS8X8YIvl/IebCzqJpZTP",
+	"AAAA///wo1ZcPAIAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

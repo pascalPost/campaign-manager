@@ -1,4 +1,4 @@
-package api
+package fileSystemService
 
 import (
 	"bytes"
@@ -146,7 +146,7 @@ func TestGetFileTree(t *testing.T) {
 	err = os.WriteFile(path.Join(prefix, "dir/nestedDir/test.txt"), []byte(""), 0o644)
 	assert.NoError(t, err)
 
-	server := NewServer(prefix)
+	server := NewFileSystemService(prefix)
 	handler := Handler(NewStrictHandler(server, nil))
 
 	for _, test := range tests {
@@ -252,7 +252,7 @@ func TestPostFileTree(t *testing.T) {
 	err := os.MkdirAll(path.Join(prefix, "dir"), 0o777)
 	assert.NoError(t, err)
 
-	server := NewServer(prefix)
+	server := NewFileSystemService(prefix)
 	handler := Handler(NewStrictHandler(server, nil))
 
 	for _, test := range tests {
@@ -355,7 +355,7 @@ func TestDeleteFileTree(t *testing.T) {
 
 	prefix := t.TempDir()
 
-	server := NewServer(prefix)
+	server := NewFileSystemService(prefix)
 	handler := Handler(NewStrictHandler(server, nil))
 
 	for _, test := range tests {
@@ -409,7 +409,7 @@ func TestGetFileFilePath(t *testing.T) {
 	err = os.WriteFile(path.Join(prefix, "test/test_nested.txt"), []byte("test2"), 0o644)
 	assert.NoError(t, err)
 
-	server := NewServer(prefix)
+	server := NewFileSystemService(prefix)
 	handler := Handler(NewStrictHandler(server, nil))
 
 	for _, test := range tests {
@@ -439,7 +439,7 @@ func TestPutFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	rr := httptest.NewRecorder()
-	server := NewServer(prefix)
+	server := NewFileSystemService(prefix)
 
 	handler := Handler(NewStrictHandler(server, nil))
 	handler.ServeHTTP(rr, req)

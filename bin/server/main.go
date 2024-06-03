@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/campaign-manager/fileSystemService"
 	"github.com/campaign-manager/internal/api"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,28 +41,16 @@ func main() {
 	//r.Use(nethttpmiddleware.OapiRequestValidator(swagger))
 
 	// TODO read this from config
-	strictServer := api.NewServer("./work")
+	const fileSystemRoot = "./work"
+	fsStrictServer := fileSystemService.NewFileSystemService(fileSystemRoot)
+	fsServer := fileSystemService.NewStrictHandler(fsStrictServer, nil)
+	fsHandler := fileSystemService.Handler(fsServer)
+	r.Mount("/fs", fsHandler)
 
+	strictServer := api.NewServer()
 	server := api.NewStrictHandler(strictServer, nil)
-
 	handler := api.Handler(server)
-
 	r.Mount("/", handler)
-
-	//r.Get("/api/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
-	//	w.Header().Set("Content-Type", "application/yaml")
-	//	err := json.NewEncoder(w).Encode(oapi.Spec)
-	//	if err != nil {
-	//		if c.Dev() {
-	//			http.Error(w, "Internal error: "+err.Error(), http.StatusInternalServerError)
-	//			return
-	//		}
-	//
-	//		http.Error(w, "Internal error", http.StatusInternalServerError)
-	//		return
-	//	}
-	//})
-	//swh := swgui.NewHandler(filePathToSchema, urlToSchema, "/")
 
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
@@ -76,29 +65,6 @@ func main() {
 			return
 		}
 	})
-
-	//hh := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-	//	http.ServeFile(rw, r, "/api/openapi.yaml")
-	//})
-
-	//r.Handle("/", hh)
-
-	//r.Mount("/api/docs", swgui.New(
-	//	"test",
-	//	"/api/openapi.json",
-	//	"/api/docs/",
-	//))
-	//println("docs at http://" + addr + "/api/docs")
-
-	//h := api.HandlerFromMux(handler, r)
-	//
-	//s := &http.Server{
-	//	Handler: h,
-	//	Addr:    addr,
-	//}
-	//
-	//slog.Info("Server running at", "address", addr)
-	//log.Fatal(s.ListenAndServe())
 
 	http.ListenAndServe(addr, r)
 }

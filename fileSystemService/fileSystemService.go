@@ -1,4 +1,4 @@
-package api
+package fileSystemService
 
 import (
 	"bytes"
@@ -12,9 +12,11 @@ import (
 	"strings"
 )
 
-type FilesService struct {
+type FileSystemService struct {
 	Prefix string
 }
+
+var _ StrictServerInterface = (*FileSystemService)(nil)
 
 const NonLocalPathMessage = "Non local path."
 const PathNotFoundMessage = "Path not found."
@@ -38,8 +40,8 @@ func normalizePath(path string) string {
 	return filepath.Clean(filepath.Join("./", path))
 }
 
-func NewFilesService(prefix string) *FilesService {
-	return &FilesService{
+func NewFileSystemService(prefix string) *FileSystemService {
+	return &FileSystemService{
 		Prefix: prefix,
 	}
 }
@@ -62,7 +64,7 @@ func getFileTree(prefix string, filePath string) ([]FileTreeEntry, error) {
 	return result, nil
 }
 
-func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeRequestObject) (GetFileTreeResponseObject, error) {
+func (s *FileSystemService) GetFileTree(ctx context.Context, request GetFileTreeRequestObject) (GetFileTreeResponseObject, error) {
 	result, err := getFileTree(s.Prefix, "/")
 	if err != nil {
 		return nil, err
@@ -71,7 +73,7 @@ func (s *FilesService) GetFileTree(ctx context.Context, request GetFileTreeReque
 	return GetFileTree200JSONResponse(result), nil
 }
 
-func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error) {
+func (s *FileSystemService) GetFileTreePath(ctx context.Context, request GetFileTreePathRequestObject) (GetFileTreePathResponseObject, error) {
 	normPath := normalizePath(request.Path)
 	if !isSavePath(normPath) {
 		return GetFileTreePath400JSONResponse{nonLocalPathResponse()}, nil
@@ -84,7 +86,7 @@ func (s *FilesService) GetFileTreePath(ctx context.Context, request GetFileTreeP
 	return GetFileTreePath200JSONResponse(result), nil
 }
 
-func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
+func (s *FileSystemService) PostFileTree(ctx context.Context, request PostFileTreeRequestObject) (PostFileTreeResponseObject, error) {
 	reqPath := normalizePath(request.Body.Path)
 	if !isSavePath(reqPath) {
 		return PostFileTree400JSONResponse{nonLocalPathResponse()}, nil
@@ -117,7 +119,7 @@ func (s *FilesService) PostFileTree(ctx context.Context, request PostFileTreeReq
 	}, nil
 }
 
-func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
+func (s *FileSystemService) DeleteFileTreePath(ctx context.Context, request DeleteFileTreePathRequestObject) (DeleteFileTreePathResponseObject, error) {
 	normPath := normalizePath(request.Path)
 	if !isSavePath(normPath) {
 		return DeleteFileTreePath400JSONResponse{nonLocalPathResponse()}, nil
@@ -144,12 +146,12 @@ func (s *FilesService) DeleteFileTreePath(ctx context.Context, request DeleteFil
 	}, nil
 }
 
-//func (s *FilesService) PutFiles(ctx context.Context, request PutFileTreeRequestObject) (PutFilesResponseObject, error) {
+//func (s *FileSystemService) PutFiles(ctx context.Context, request PutFileTreeRequestObject) (PutFilesResponseObject, error) {
 //	//TODO implement me
 //	panic("implement me")
 //}
 
-func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error) {
+func (s *FileSystemService) GetFileFilePath(ctx context.Context, request GetFileFilePathRequestObject) (GetFileFilePathResponseObject, error) {
 	normPath := normalizePath(request.FilePath)
 	if !isSavePath(normPath) {
 		return GetFileFilePath400JSONResponse{BadRequestJSONResponse{NonLocalPathMessage}}, nil
@@ -188,7 +190,7 @@ func (s *FilesService) GetFileFilePath(ctx context.Context, request GetFileFileP
 	}, nil
 }
 
-func (s *FilesService) PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error) {
+func (s *FileSystemService) PutFileFilePath(ctx context.Context, request PutFileFilePathRequestObject) (PutFileFilePathResponseObject, error) {
 	normPath := normalizePath(request.FilePath)
 	if !isSavePath(normPath) {
 		return PutFileFilePath400JSONResponse{BadRequestJSONResponse{NonLocalPathMessage}}, nil
