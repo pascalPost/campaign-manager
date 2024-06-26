@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -18,6 +19,21 @@ import (
 	"github.com/go-chi/chi/v5"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
+
+// Project defines model for Project.
+type Project struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+// PostProjectsJSONBody defines parameters for PostProjects.
+type PostProjectsJSONBody struct {
+	Name string `json:"name"`
+}
+
+// PostProjectsJSONRequestBody defines body for PostProjects for application/json ContentType.
+type PostProjectsJSONRequestBody PostProjectsJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -33,7 +49,7 @@ type ServerInterface interface {
 	// List projects
 	// (GET /projects)
 	GetProjects(w http.ResponseWriter, r *http.Request)
-	// Add new projects
+	// Add new project
 	// (POST /projects)
 	PostProjects(w http.ResponseWriter, r *http.Request)
 }
@@ -66,7 +82,7 @@ func (_ Unimplemented) GetProjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Add new projects
+// Add new project
 // (POST /projects)
 func (_ Unimplemented) PostProjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -324,11 +340,32 @@ type GetProjectsResponseObject interface {
 	VisitGetProjectsResponse(w http.ResponseWriter) error
 }
 
+type GetProjects200JSONResponse []Project
+
+func (response GetProjects200JSONResponse) VisitGetProjectsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PostProjectsRequestObject struct {
+	Body *PostProjectsJSONRequestBody
 }
 
 type PostProjectsResponseObject interface {
 	VisitPostProjectsResponse(w http.ResponseWriter) error
+}
+
+type PostProjects201JSONResponse struct {
+	Id string `json:"id"`
+}
+
+func (response PostProjects201JSONResponse) VisitPostProjectsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 // StrictServerInterface represents all server handlers.
@@ -345,7 +382,7 @@ type StrictServerInterface interface {
 	// List projects
 	// (GET /projects)
 	GetProjects(ctx context.Context, request GetProjectsRequestObject) (GetProjectsResponseObject, error)
-	// Add new projects
+	// Add new project
 	// (POST /projects)
 	PostProjects(ctx context.Context, request PostProjectsRequestObject) (PostProjectsResponseObject, error)
 }
@@ -479,6 +516,13 @@ func (sh *strictHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 func (sh *strictHandler) PostProjects(w http.ResponseWriter, r *http.Request) {
 	var request PostProjectsRequestObject
 
+	var body PostProjectsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.PostProjects(ctx, request.(PostProjectsRequestObject))
 	}
@@ -502,11 +546,14 @@ func (sh *strictHandler) PostProjects(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/4zQwUoDMRAG4FcJ/zlso73lVjxIRWHRJ4i745riJiEzrUjJu0tW1yKWracE5ueb4T/C",
-	"h5cIe0RP3GWfxMcAixs3JueHoB5ccANl9UgsatNuG2iIlzc6E4LGgTJ/Caa5agyKRkwUXPKwWDemWUMj",
-	"OXnlunO1i8/TZyCpT0yUXb1g28PiluSuzjUycYqBqWaLBu/H0eUPWNx7FjUhRSNFPqO0kS8ym75Xgd6r",
-	"hFI0VsmHYemuts5/g7g25m+PT/uuI2Y1Jyf+tLg6iikfKH8vznFHnSyW0s6ZS8X8YIvl/IebCzqJpZTP",
-	"AAAA///wo1ZcPAIAAA==",
+	"H4sIAAAAAAAC/6RTwWrcQAz9FaP2aGynufmW9lBSWjDtsfQwsZXNLPHMRJJTljD/XqS1s+yuuyX0YgYk",
+	"PT89vfcCfRxTDBiEoX0B7h9wdPbsKG6xF30miglJPFrBD/qVXUJogYV82EAuIbgRVwvJycNKIZdA+DR5",
+	"wgHan4o6Y8wTv8plIt4ZkawjPtxHBRuQe/JJfAzQwic3Juc3ofjmgtsgFd+RpbjpbisoQbw84koTlPCM",
+	"xHuEprqqGmUbEwaXPLRwXTXV9czGFq+38c4eGzRZVBSnDG4HaOEzyhet61qcYmBTK5fA0zg62kELXz1L",
+	"YSAqS+QVlC7yP2FuhqEI+FuRTMY6qaAXeHVaPwaED01zruOPqe+RuVg6Df7wY8UpGOkZaf7x3iMXRemW",
+	"nnUCfQyCwUZdSo++t+F6y0poMaTZTnC0wfeE99DCu/pg3Xr2bb2YNr+axxG53d47b9rVbvW638V7HW34",
+	"NCHLxzjs3rTcccL+EqWTxFjXekoObUIT5jPlr/6D3Gr8z8O8TuwktoROcDhRfrF3Wm6Zc/4TAAD//x91",
+	"tuqoBAAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

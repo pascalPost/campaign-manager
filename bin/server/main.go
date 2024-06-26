@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/campaign-manager/fileSystemService"
 	"github.com/campaign-manager/internal/api"
+	"github.com/campaign-manager/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -47,7 +48,8 @@ func main() {
 	fsHandler := fileSystemService.Handler(fsServer)
 	r.Mount("/fs", fsHandler)
 
-	strictServer := api.NewServer()
+	store := storage.NewInMemStorage()
+	strictServer := api.NewServer(fileSystemRoot, store)
 	server := api.NewStrictHandler(strictServer, nil)
 	handler := api.Handler(server)
 	r.Mount("/", handler)
